@@ -37,8 +37,13 @@
           <div class="camera-stage">
             <video id="mirrorVideo" autoplay playsinline muted></video>
             <canvas id="mirrorCanvas"></canvas>
+            <div id="screenFlash" class="screen-flash" aria-hidden="true"></div>
             <div id="guideMessage" class="guide-message">Active la caméra pour commencer</div>
           </div>
+        </div>
+
+        <div class="camera-actions">
+          <button id="flashButton" class="flash-button glass" type="button">⚡ Flash écran</button>
         </div>
 
         <div class="zone-strip" id="zoneStrip">
@@ -68,46 +73,46 @@
           <article class="analysis-card glass">
             <span class="card-icon">◇</span>
             <h3>Morphologie</h3>
-            <p id="aFace">En attente du visage…</p>
+            <p id="aFace">Active la caméra pour lancer l’analyse en direct.</p>
           </article>
           <article class="analysis-card glass">
             <span class="card-icon">⌒</span>
             <h3>Front</h3>
-            <p id="aForehead">En attente du visage…</p>
+            <p id="aForehead">Active la caméra pour lancer l’analyse en direct.</p>
           </article>
           <article class="analysis-card glass">
             <span class="card-icon">◉</span>
             <h3>Yeux</h3>
-            <p id="aEyes">En attente du visage…</p>
+            <p id="aEyes">Active la caméra pour lancer l’analyse en direct.</p>
           </article>
           <article class="analysis-card glass">
             <span class="card-icon">⌁</span>
             <h3>Sourcils</h3>
-            <p id="aBrows">En attente du visage…</p>
+            <p id="aBrows">Active la caméra pour lancer l’analyse en direct.</p>
           </article>
           <article class="analysis-card glass">
             <span class="card-icon">♡</span>
             <h3>Lèvres</h3>
-            <p id="aLips">En attente du visage…</p>
+            <p id="aLips">Active la caméra pour lancer l’analyse en direct.</p>
           </article>
           <article class="analysis-card glass">
             <span class="card-icon">⌄</span>
             <h3>Mâchoire & menton</h3>
-            <p id="aJaw">En attente du visage…</p>
+            <p id="aJaw">Active la caméra pour lancer l’analyse en direct.</p>
           </article>
         </div>
 
         <article class="analysis-card color-card glass">
           <span class="card-icon">✦</span>
           <h3>Colorimétrie</h3>
-          <p id="aColor">En attente du visage…</p>
+          <p id="aColor">Active la caméra pour lancer l’analyse en direct.</p>
           <div id="palette" class="palette"></div>
         </article>
 
         <article class="analysis-card glass">
           <span class="card-icon">↗</span>
           <h3>Sourcils conseillés</h3>
-          <p id="aBrowAdvice">En attente du visage…</p>
+          <p id="aBrowAdvice">Active la caméra pour lancer l’analyse en direct.</p>
         </article>
       </section>
 
@@ -177,11 +182,11 @@
         </div>
         <article class="profile-card glass">
           <h3>✨ Mon analyse</h3>
-          <p id="profileAnalysis">Aucune analyse active.</p>
+          <p id="profileAnalysis">Active la caméra pour créer ton analyse.</p>
         </article>
         <article class="profile-card glass">
           <h3>🎨 Ma colorimétrie</h3>
-          <p id="profileColor">Aucune colorimétrie active.</p>
+          <p id="profileColor">Active la caméra pour lire ta colorimétrie.</p>
         </article>
         <article class="profile-card glass">
           <h3>⚙️ Confidentialité</h3>

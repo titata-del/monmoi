@@ -124,6 +124,17 @@ $$(".mood-card").forEach(btn=>btn.addEventListener("click",()=>{
 
 $("#cameraButton").addEventListener("click",startCamera);
 
+$("#flashButton").addEventListener("click", async ()=>{
+  const flash=$("#screenFlash");
+  flash.classList.add("on");
+  $("#guideMessage").textContent="Éclairage du visage…";
+  await new Promise(r=>setTimeout(r,520));
+  flash.classList.remove("on");
+  setTimeout(()=>{
+    if(latestLandmarks) $("#guideMessage").textContent="Analyse active";
+  },180);
+});
+
 async function initLandmarker(){
   $("#cameraStatus").textContent="Chargement de l’analyse…";
   const vision=await FilesetResolver.forVisionTasks(WASM_URL);
@@ -179,7 +190,7 @@ function loop(){
       latestLandmarks=result.faceLandmarks[0];
       latestAnalysis=analyzeFace(latestLandmarks,v);
       updateAnalysisUI(latestAnalysis);
-      $("#cameraStatus").textContent="Visage détecté ✓";
+      $("#cameraStatus").textContent="Visage détecté ✓ · analyse en direct";
       $("#guideMessage").textContent="Analyse active";
       drawLandmarks($("#mirrorCanvas"),v,latestLandmarks);
       drawMakeup($("#tryCanvas"),$("#tryVideo"),latestLandmarks,activeEffect,activeColor,effectIntensity);
@@ -246,11 +257,12 @@ function analyzeFace(lm,video){
   const browShape=browArch<-0.018?"arqué":Math.abs(browArch)<0.010?"droit":"courbe douce";
   const lipWidth=label3(mouthW,.34,.43,["étroite","moyenne","large"]);
   const lipVolume=label3(lipH,.018,.035,["fin","moyen","plein"]);
+  const lipShape=lipVolume==="plein"?"pulpeuse":lipWidth==="large"?"étirée douce":lipVolume==="fin"?"fine définie":"équilibrée";
   const jaw=label3(jawW,.66,.76,["fine","moyenne","large"]);
   const chinShape=chinWidth<.24?"pointu":chinWidth>.34?"large et arrondi":"arrondi";
 
   const colors=sampleColors(video,lm);
-  return {faceShape,forehead,foreheadShare,eyeShape,eyeTilt,browSize,browShape,lipWidth,lipVolume,jaw,chinShape,...colors};
+  return {faceShape,forehead,foreheadShare,eyeShape,eyeTilt,browSize,browShape,lipWidth,lipVolume,lipShape,jaw,chinShape,...colors};
 }
 
 function getPixel(video,x,y){
@@ -278,6 +290,10 @@ function sampleColors(video,lm){
     getPixel(video,P(lm,13).x,P(lm,13).y),
     getPixel(video,P(lm,14).x,P(lm,14).y)
   ]);
+  const brows=mixColor([
+    getPixel(video,P(lm,70).x,P(lm,70).y),
+    getPixel(video,P(lm,300).x,P(lm,300).y)
+  ]);
   const irisL=getPixel(video,P(lm,468)?.x ?? P(lm,159).x,P(lm,468)?.y ?? P(lm,159).y);
   const irisR=getPixel(video,P(lm,473)?.x ?? P(lm,386).x,P(lm,473)?.y ?? P(lm,386).y);
   const iris=mixColor([irisL,irisR]);
@@ -288,7 +304,7 @@ function sampleColors(video,lm){
   const contrast=Math.abs(luminance(skin)-luminance(iris));
   const contrastLabel=contrast>95?"fort":contrast>55?"moyen":"doux";
   return {
-    skinHex:rgbHex(skin),lipHex:rgbHex(lips),irisHex:rgbHex(iris),
+    skinHex:rgbHex(skin),lipHex:rgbHex(lips),irisHex:rgbHex(iris),browHex:rgbHex(brows),
     undertone,complexion,contrastLabel
   };
 }
@@ -297,8 +313,8 @@ function updateAnalysisUI(a){
   $("#aFace").textContent=`Visage ${a.faceShape}. Structure globale détectée à partir du contour et des proportions du visage.`;
   $("#aForehead").textContent=`Front ${a.forehead}. Sa place dans le tiers supérieur du visage est ${a.forehead==="haut"?"marquée":a.forehead==="court"?"compacte":"équilibrée"}.`;
   $("#aEyes").textContent=`Yeux ${a.eyeShape}, inclinaison ${a.eyeTilt}. Avec cette lumière, l’iris détecté est ${a.irisHex}.`;
-  $("#aBrows").textContent=`Sourcils ${a.browSize}, forme ${a.browShape}. Leur teinte est lue directement sur la caméra quand la zone est bien visible.`;
-  $("#aLips").textContent=`Lèvres ${a.lipWidth}, volume ${a.lipVolume}. Teinte détectée maintenant : ${a.lipHex}.`;
+  $("#aBrows").textContent=`Sourcils ${a.browSize}, forme ${a.browShape}. Avec cette lumière, teinte détectée : ${a.browHex}.`;
+  $("#aLips").textContent=`Lèvres ${a.lipShape}, largeur ${a.lipWidth}, volume ${a.lipVolume}. Teinte détectée maintenant : ${a.lipHex}.`;
   $("#aJaw").textContent=`Mâchoire ${a.jaw}. Menton ${a.chinShape}.`;
   $("#aColor").textContent=`Carnation ${a.complexion}, sous-ton ${a.undertone}, contraste ${a.contrastLabel}. La couleur de peau lue maintenant est ${a.skinHex}; ces valeurs suivent l’image de la caméra.`;
   $("#aBrowAdvice").textContent=browAdvice(a.faceShape);
@@ -329,9 +345,9 @@ function renderMirrorZone(){
   const data={
     face:["Visage",`Forme ${a.faceShape}. Structure globale analysée en direct.`],
     forehead:["Front",`Hauteur ${a.forehead}. Proportion ${a.forehead==="haut"?"dominante":a.forehead==="court"?"compacte":"équilibrée"}.`],
-    brows:["Sourcils",`Épaisseur ${a.browSize}. Forme ${a.browShape}. La teinte est lue sur l’image actuelle.`],
+    brows:["Sourcils",`Épaisseur ${a.browSize}. Forme ${a.browShape}. Avec cette lumière : ${a.browHex}.`],
     eyes:["Yeux",`Forme ${a.eyeShape}. Inclinaison ${a.eyeTilt}. Avec cette lumière : ${a.irisHex}.`],
-    lips:["Lèvres",`Forme analysée. Largeur ${a.lipWidth}. Volume ${a.lipVolume}. Teinte ${a.lipHex}.`],
+    lips:["Lèvres",`Forme ${a.lipShape}. Largeur ${a.lipWidth}. Volume ${a.lipVolume}. Teinte ${a.lipHex}.`],
     jaw:["Mâchoire",`Mâchoire ${a.jaw}. Menton ${a.chinShape}.`],
     skin:["Peau",`Carnation ${a.complexion}. Sous-ton ${a.undertone}. Contraste ${a.contrastLabel}. Couleur caméra ${a.skinHex}.`]
   }[activeZone];

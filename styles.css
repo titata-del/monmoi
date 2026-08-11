@@ -80,3 +80,29 @@ button{touch-action:manipulation}
   .key{width:70px;height:70px}
   .camera-stage{aspect-ratio:3/4}
 }
+
+.screen-flash{
+  position:absolute;
+  inset:0;
+  background:rgba(255,255,255,.96);
+  opacity:0;
+  pointer-events:none;
+  z-index:8;
+  transition:opacity .14s ease;
+}
+.screen-flash.on{opacity:1}
+.camera-actions{
+  display:flex;
+  justify-content:flex-end;
+  margin-top:9px;
+}
+.flash-button{
+  border-radius:999px;
+  border:1px solid var(--border);
+  color:var(--text);
+  padding:10px 14px;
+  background:rgba(255,255,255,.66);
+  font-size:12px;
+  font-weight:700;
+}
+.flash-button:active{transform:scale(.98)}
