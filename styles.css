@@ -174,3 +174,27 @@ button{touch-action:manipulation}
 .analysis-progress-copy{text-align:center;padding:12px 14px}
 .analysis-progress-copy h2{font-size:24px;margin:0 0 6px}
 .analysis-progress-copy p{font-size:13px;color:var(--muted);margin:0}
+
+
+.detected-color{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  margin:5px 2px 1px;
+  padding:5px 9px 5px 6px;
+  border-radius:999px;
+  background:rgba(255,255,255,.66);
+  border:1px solid rgba(255,255,255,.92);
+  vertical-align:middle;
+  white-space:nowrap;
+  font-weight:650;
+  color:var(--text);
+}
+.detected-color-dot{
+  width:18px;
+  height:18px;
+  border-radius:50%;
+  border:2px solid rgba(255,255,255,.94);
+  box-shadow:0 2px 8px rgba(35,28,38,.14), inset 0 0 0 1px rgba(40,30,45,.08);
+  flex:0 0 auto;
+}

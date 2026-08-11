@@ -16,6 +16,8 @@ let latestLandmarks = null;
 let savedAnalysis = null;
 let stableFrames = 0;
 let capturing = false;
+let analysisLoopId = 0;
+let liveRunning = false;
 
 let activeZone = "face";
 let activeEffect = "brows";
@@ -107,10 +109,12 @@ $("#beginAnalysisButton").addEventListener("click",async()=>{
   $("#analysisProgressTitle").textContent="Ouverture de la caméra…";
   try{
     await startCamera();
-    stableFrames=0; savedAnalysis=null; capturing=false;
+    stableFrames=0; savedAnalysis=null; capturing=false; lastTime=-1;
+    liveRunning=false;
     $("#analysisProgressTitle").textContent="Détection du visage";
     $("#analysisProgressText").textContent="Regarde droit devant toi et reste immobile quelques secondes.";
-    analyzeLoop();
+    const loopId=++analysisLoopId;
+    analyzeLoop(loopId);
   }catch(e){
     console.error(e);
     $("#analysisProgressTitle").textContent="Analyse impossible";
@@ -118,18 +122,41 @@ $("#beginAnalysisButton").addEventListener("click",async()=>{
   }
 });
 
-$("#cameraButton").addEventListener("click",()=>{
+$("#cameraButton").addEventListener("click",async()=>{
+  liveRunning=false;
+  analysisLoopId++;
   $("#appHeader").classList.add("hidden");
   $("#bottomNav").classList.add("hidden");
   $$(".tab-view").forEach(v=>v.classList.remove("active"));
   $("#analysisProgress").classList.remove("hidden");
-  stableFrames=0; savedAnalysis=null; capturing=false;
+
+  stableFrames=0;
+  savedAnalysis=null;
+  latestLandmarks=null;
+  capturing=false;
+  lastTime=-1;
+
   $("#analysisProgressTitle").textContent="Nouvelle analyse";
-  $("#analysisProgressText").textContent="Regarde droit devant toi.";
+  $("#analysisProgressText").textContent="Regarde droit devant toi et reste immobile.";
+  $("#analysisGuide").textContent="Place ton visage face caméra";
+  clearCanvas($("#analysisCanvas"));
+
+  try{
+    const analysisVideo=$("#analysisVideo");
+    analysisVideo.srcObject=stream;
+    await analysisVideo.play();
+    const loopId=++analysisLoopId;
+    analyzeLoop(loopId);
+  }catch(err){
+    console.error(err);
+    $("#analysisProgressTitle").textContent="Impossible de relancer";
+    $("#analysisProgressText").textContent="Recharge la page puis autorise de nouveau la caméra.";
+  }
 });
 
-function analyzeLoop(){
-  if(!stream||!landmarker){raf=requestAnimationFrame(analyzeLoop);return}
+function analyzeLoop(loopId){
+  if(loopId!==analysisLoopId)return;
+  if(!stream||!landmarker){raf=requestAnimationFrame(()=>analyzeLoop(loopId));return}
   const v=$("#analysisVideo");
   if(v.readyState>=2&&v.currentTime!==lastTime){
     lastTime=v.currentTime;
@@ -148,7 +175,7 @@ function analyzeLoop(){
       $("#analysisProgressTitle").textContent="Détection du visage";
     }
   }
-  if(!savedAnalysis) raf=requestAnimationFrame(analyzeLoop);
+  if(!savedAnalysis && loopId===analysisLoopId) raf=requestAnimationFrame(()=>analyzeLoop(loopId));
 }
 
 async function captureWithFlash(){
@@ -198,6 +225,7 @@ async function captureWithFlash(){
 }
 
 async function startLiveViews(){
+  liveRunning=true;
   for(const v of [$("#mirrorVideo"),$("#tryVideo"),$("#adviceVideo")]){
     if(!v) continue;
     v.srcObject=stream;
@@ -206,7 +234,7 @@ async function startLiveViews(){
   requestAnimationFrame(liveLoop);
 }
 function liveLoop(){
-  if(!stream||!landmarker)return;
+  if(!liveRunning||!stream||!landmarker)return;
   const v=$("#mirrorVideo");
   if(v.readyState>=2){
     const res=landmarker.detectForVideo(v,performance.now());
@@ -217,7 +245,7 @@ function liveLoop(){
       drawMood($("#adviceCanvas"),$("#adviceVideo"),latestLandmarks,activeMood);
     }
   }
-  requestAnimationFrame(liveLoop);
+  if(liveRunning) requestAnimationFrame(liveLoop);
 }
 
 function switchTab(tab){
@@ -346,17 +374,21 @@ function sampleColors(video,lm){
   return {skinHex:hex(skin),skinName:skinName(skin),lipHex:hex(lips),lipName:lipName(lips),browHex:hex(brows),browName:browName(brows),irisHex:hex(iris),irisName:irisName(iris),undertone,contrast};
 }
 
+function colorPill(name,color){
+  return `<span class="detected-color"><span class="detected-color-dot" style="background:${color}"></span>${name}</span>`;
+}
+
 function updateAll(a){
   $("#aFace").textContent=`Visage ${a.faceShape}.`;
   $("#aForehead").textContent=`Front ${a.forehead}.`;
-  $("#aEyes").textContent=`Yeux ${a.eyeShape}, ${a.eyeTiltLabel}. Couleur : ${a.irisName} (${a.irisHex}).`;
-  $("#aBrows").textContent=`Sourcils ${a.browSize}, ${a.browShape}. Couleur : ${a.browName} (${a.browHex}).`;
-  $("#aLips").textContent=`Lèvres ${a.lipShape}, largeur ${a.lipWidth}, volume ${a.lipVolume}. Couleur : ${a.lipName} (${a.lipHex}).`;
+  $("#aEyes").innerHTML=`Yeux ${a.eyeShape}, ${a.eyeTiltLabel}.<br>Couleur ${colorPill(a.irisName,a.irisHex)}`;
+  $("#aBrows").innerHTML=`Sourcils ${a.browSize}, ${a.browShape}.<br>Couleur ${colorPill(a.browName,a.browHex)}`;
+  $("#aLips").innerHTML=`Lèvres ${a.lipShape}, largeur ${a.lipWidth}, volume ${a.lipVolume}.<br>Couleur ${colorPill(a.lipName,a.lipHex)}`;
   $("#aJaw").textContent=`Mâchoire ${a.jaw}. Menton ${a.chin}.`;
-  $("#aColor").textContent=`Peau ${a.skinName} (${a.skinHex}), sous-ton ${a.undertone}, contraste ${a.contrast}.`;
+  $("#aColor").innerHTML=`Peau ${colorPill(a.skinName,a.skinHex)} · sous-ton ${a.undertone} · contraste ${a.contrast}.`;
   $("#aBrowAdvice").textContent=browAdvice(a.faceShape);
   $("#profileAnalysis").textContent=`Visage ${a.faceShape} · yeux ${a.eyeShape} · mâchoire ${a.jaw}.`;
-  $("#profileColor").textContent=`Peau ${a.skinName} · sous-ton ${a.undertone} · contraste ${a.contrast}.`;
+  $("#profileColor").innerHTML=`Peau ${colorPill(a.skinName,a.skinHex)} · sous-ton ${a.undertone} · contraste ${a.contrast}.`;
   $("#palette").innerHTML=recommendPalette(a).map(c=>`<span class="palette-swatch" style="background:${c}"></span>`).join("");
   renderMirrorZone();
 }
@@ -374,13 +406,13 @@ function renderMirrorZone(){
   const data={
     face:["Visage",`Forme ${a.faceShape}.`],
     forehead:["Front",`Front ${a.forehead}.`],
-    brows:["Sourcils",`Épaisseur ${a.browSize}. Forme ${a.browShape}. Couleur ${a.browName} (${a.browHex}).`],
-    eyes:["Yeux",`Forme ${a.eyeShape}. Inclinaison : ${a.eyeTiltLabel}. Couleur ${a.irisName} (${a.irisHex}).`],
-    lips:["Lèvres",`Forme ${a.lipShape}. Largeur ${a.lipWidth}. Volume ${a.lipVolume}. Couleur ${a.lipName} (${a.lipHex}).`],
+    brows:["Sourcils",`Épaisseur ${a.browSize}. Forme ${a.browShape}.<br>Couleur ${colorPill(a.browName,a.browHex)}`],
+    eyes:["Yeux",`Forme ${a.eyeShape}. Inclinaison : ${a.eyeTiltLabel}.<br>Couleur ${colorPill(a.irisName,a.irisHex)}`],
+    lips:["Lèvres",`Forme ${a.lipShape}. Largeur ${a.lipWidth}. Volume ${a.lipVolume}.<br>Couleur ${colorPill(a.lipName,a.lipHex)}`],
     jaw:["Mâchoire",`Mâchoire ${a.jaw}. Menton ${a.chin}.`],
-    skin:["Peau",`Teinte ${a.skinName} (${a.skinHex}). Sous-ton ${a.undertone}. Contraste ${a.contrast}.`]
+    skin:["Peau",`Teinte ${colorPill(a.skinName,a.skinHex)} · sous-ton ${a.undertone} · contraste ${a.contrast}.`]
   }[activeZone];
-  $("#mirrorResultTitle").textContent=data[0];$("#mirrorResult").textContent=data[1];
+  $("#mirrorResultTitle").textContent=data[0];$("#mirrorResult").innerHTML=data[1];
 }
 
 function fitCanvas(canvas,video){
@@ -390,24 +422,39 @@ function fitCanvas(canvas,video){
   const ctx=canvas.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);return{ctx,w:r.width,h:r.height};
 }
 function clearCanvas(c){const x=c.getContext("2d");x.clearRect(0,0,c.width,c.height)}
-function mp(p,w,h){return{x:(1-p.x)*w,y:p.y*h}}
+function mp(p,w,h,video){
+  const vw=video?.videoWidth||w;
+  const vh=video?.videoHeight||h;
+  const scale=Math.min(w/vw,h/vh);
+  const drawW=vw*scale, drawH=vh*scale;
+  const ox=(w-drawW)/2, oy=(h-drawH)/2;
+  return{x:ox+(1-p.x)*drawW,y:oy+p.y*drawH};
+}
 function drawGuide(canvas,video,lm){
   const {ctx,w,h}=fitCanvas(canvas,video);ctx.clearRect(0,0,w,h);if(!lm)return;
-  ctx.strokeStyle="rgba(255,255,255,.78)";ctx.fillStyle="rgba(255,255,255,.9)";ctx.lineWidth=1.15;ctx.beginPath();
-  FACE_OVAL.forEach((i,k)=>{const p=mp(lm[i],w,h);k?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)});ctx.closePath();ctx.stroke();
-  FACE_OVAL.forEach(i=>{const p=mp(lm[i],w,h);ctx.beginPath();ctx.arc(p.x,p.y,1.5,0,Math.PI*2);ctx.fill()});
+  const raw=FACE_OVAL.map(i=>mp(lm[i],w,h,video));
+  const cx=raw.reduce((s,p)=>s+p.x,0)/raw.length;
+  const cy=raw.reduce((s,p)=>s+p.y,0)/raw.length;
+  const pts=raw.map(p=>({x:cx+(p.x-cx)*.985,y:cy+(p.y-cy)*.985}));
+  ctx.strokeStyle="rgba(255,255,255,.82)";
+  ctx.fillStyle="rgba(255,255,255,.92)";
+  ctx.lineWidth=1.0;
+  ctx.beginPath();
+  pts.forEach((p,k)=>k?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));
+  ctx.closePath();ctx.stroke();
+  pts.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,1.15,0,Math.PI*2);ctx.fill()});
 }
 function rgba(hex,a){const n=parseInt(hex.slice(1),16);return`rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`}
-function path(ctx,lm,ids,w,h){ids.forEach((i,k)=>{const p=mp(lm[i],w,h);k?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)})}
+function path(ctx,lm,ids,w,h,video){ids.forEach((i,k)=>{const p=mp(lm[i],w,h,video);k?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)})}
 function drawMakeup(canvas,video,lm,effect,color,intensity){
   if(!lm)return;
   const {ctx,w,h}=fitCanvas(canvas,video);ctx.clearRect(0,0,w,h);const a=Math.max(.03,intensity*.34);ctx.lineCap="round";ctx.lineJoin="round";
-  if(effect==="lips"){ctx.fillStyle=rgba(color,a+.18);ctx.beginPath();path(ctx,lm,[61,185,40,39,37,0,267,269,270,409,291,375,321,405,314,17,84,181,91,146,61],w,h);ctx.closePath();ctx.fill()}
-  if(effect==="blush"){[123,352].forEach(i=>{const p=mp(lm[i],w,h),g=ctx.createRadialGradient(p.x,p.y,2,p.x,p.y,w*.10);g.addColorStop(0,rgba(color,a));g.addColorStop(1,rgba(color,0));ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,w*.11,0,Math.PI*2);ctx.fill()})}
-  if(effect==="bronzer"){ctx.strokeStyle=rgba(color,a);ctx.lineWidth=w*.045;[[127,34,139],[356,264,368],[172,136,150],[397,365,379]].forEach(s=>{ctx.beginPath();path(ctx,lm,s,w,h);ctx.stroke()})}
-  if(effect==="eyes"){ctx.strokeStyle=rgba(color,a+.1);ctx.lineWidth=w*.025;[[33,160,158,133],[362,385,387,263]].forEach(s=>{ctx.beginPath();path(ctx,lm,s,w,h);ctx.stroke()})}
-  if(effect==="brows"){ctx.strokeStyle=rgba(color,a+.15);ctx.lineWidth=w*.018;[[70,63,105,66,107],[336,296,334,293,300]].forEach(s=>{ctx.beginPath();path(ctx,lm,s,w,h);ctx.stroke()})}
-  if(effect==="complexion"){const c=mp(lm[1],w,h),g=ctx.createRadialGradient(c.x,c.y,w*.06,c.x,c.y,w*.36);g.addColorStop(0,rgba(color,a*.18));g.addColorStop(1,rgba(color,0));ctx.fillStyle=g;ctx.fillRect(0,0,w,h)}
+  if(effect==="lips"){ctx.fillStyle=rgba(color,a+.18);ctx.beginPath();path(ctx,lm,[61,185,40,39,37,0,267,269,270,409,291,375,321,405,314,17,84,181,91,146,61],w,h,video);ctx.closePath();ctx.fill()}
+  if(effect==="blush"){[123,352].forEach(i=>{const p=mp(lm[i],w,h,video),g=ctx.createRadialGradient(p.x,p.y,2,p.x,p.y,w*.10);g.addColorStop(0,rgba(color,a));g.addColorStop(1,rgba(color,0));ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,w*.11,0,Math.PI*2);ctx.fill()})}
+  if(effect==="bronzer"){ctx.strokeStyle=rgba(color,a);ctx.lineWidth=w*.045;[[127,34,139],[356,264,368],[172,136,150],[397,365,379]].forEach(s=>{ctx.beginPath();path(ctx,lm,s,w,h,video);ctx.stroke()})}
+  if(effect==="eyes"){ctx.strokeStyle=rgba(color,a+.1);ctx.lineWidth=w*.025;[[33,160,158,133],[362,385,387,263]].forEach(s=>{ctx.beginPath();path(ctx,lm,s,w,h,video);ctx.stroke()})}
+  if(effect==="brows"){ctx.strokeStyle=rgba(color,a+.15);ctx.lineWidth=w*.018;[[70,63,105,66,107],[336,296,334,293,300]].forEach(s=>{ctx.beginPath();path(ctx,lm,s,w,h,video);ctx.stroke()})}
+  if(effect==="complexion"){const c=mp(lm[1],w,h,video),g=ctx.createRadialGradient(c.x,c.y,w*.06,c.x,c.y,w*.36);g.addColorStop(0,rgba(color,a*.18));g.addColorStop(1,rgba(color,0));ctx.fillStyle=g;ctx.fillRect(0,0,w,h)}
 }
 function drawMood(canvas,video,lm,mood){
   if(!mood){clearCanvas(canvas);return}

@@ -20,3 +20,9 @@ Correction du blocage écran blanc sur iPhone/Safari. Flash plein écran conserv
 - Stabilisation iPhone/Safari : caméra d’analyse seule au démarrage, résolution allégée, GPU avec repli CPU.
 - Flash selfie type Snapchat : bordures/écran très blancs avec le visage restant visible au centre.
 - Sécurité anti-écran blanc : le flash est systématiquement retiré même si une capture échoue.
+
+
+## V8
+- Refaire l’analyse relance réellement tout le processus.
+- Recalage du contour sur le flux vidéo réel pour iPhone.
+- Couleurs affichées avec un rond visuel et un nom, sans valeur hexadécimale.
