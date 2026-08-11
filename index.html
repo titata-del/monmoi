@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="Beauty Mirror">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./icon-192.png">
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./styles.css?v=9">
   <title>Beauty Mirror</title>
 </head>
 <body>
@@ -49,7 +49,7 @@
 
       <header id="appHeader" class="topbar glass hidden">
         <div>
-          <div id="screenTitle" class="screen-title">Miroir</div>
+          <div class="title-row"><div id="screenTitle" class="screen-title">Miroir</div><span class="version-badge">V9</span></div>
           <div id="cameraStatus" class="status-text">Analyse requise</div>
         </div>
         <button id="cameraButton" class="mini-button" type="button">Refaire l’analyse</button>
@@ -64,12 +64,7 @@
             <div id="guideMessage" class="guide-message">Active la caméra pour commencer</div>
           </div>
         </div>
-
-        <div class="camera-actions">
-          <button id="flashButton" class="flash-button glass" type="button">⚡ Refaire l’analyse</button>
-        </div>
-
-        <div class="zone-strip" id="zoneStrip">
+<div class="zone-strip" id="zoneStrip">
           <button type="button" data-zone="face" class="zone-chip active">Visage</button>
           <button type="button" data-zone="forehead" class="zone-chip">Front</button>
           <button type="button" data-zone="brows" class="zone-chip">Sourcils</button>
@@ -227,6 +222,6 @@
     </section>
   </main>
 
-  <script type="module" src="./app.js"></script>
+  <script type="module" src="./app.js?v=9"></script>
 </body>
 </html>

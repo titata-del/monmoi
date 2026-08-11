@@ -59,6 +59,78 @@ buildPin();
 
 const videos=()=>[$("#analysisVideo"),$("#mirrorVideo"),$("#tryVideo"),$("#adviceVideo")].filter(Boolean);
 
+function clearSavedResults(){
+  savedAnalysis=null;
+  latestLandmarks=null;
+  stableFrames=0;
+  capturing=false;
+  lastTime=-1;
+  $("#aFace").textContent="Analyse en cours…";
+  $("#aForehead").textContent="Analyse en cours…";
+  $("#aEyes").textContent="Analyse en cours…";
+  $("#aBrows").textContent="Analyse en cours…";
+  $("#aLips").textContent="Analyse en cours…";
+  $("#aJaw").textContent="Analyse en cours…";
+  $("#aColor").textContent="Analyse en cours…";
+  $("#aBrowAdvice").textContent="Analyse en cours…";
+  $("#profileAnalysis").textContent="Analyse en cours…";
+  $("#profileColor").textContent="Analyse en cours…";
+  $("#palette").innerHTML="";
+  $("#mirrorResultTitle").textContent="Analyse";
+  $("#mirrorResult").textContent="Nouvelle analyse en cours…";
+}
+
+async function stopCameraAndModel(){
+  liveRunning=false;
+  analysisLoopId++;
+  if(raf){
+    cancelAnimationFrame(raf);
+    raf=null;
+  }
+  for(const v of videos()){
+    try{
+      v.pause();
+      v.srcObject=null;
+    }catch(e){}
+  }
+  if(stream){
+    stream.getTracks().forEach(track=>track.stop());
+    stream=null;
+  }
+  if(landmarker){
+    try{ landmarker.close(); }catch(e){}
+    landmarker=null;
+  }
+  await new Promise(r=>setTimeout(r,180));
+}
+
+async function restartAnalysis(){
+  $("#appHeader").classList.add("hidden");
+  $("#bottomNav").classList.add("hidden");
+  $$(".tab-view").forEach(v=>v.classList.remove("active"));
+  $("#analysisIntro").classList.add("hidden");
+  $("#analysisProgress").classList.remove("hidden");
+  $("#analysisProgressTitle").textContent="Redémarrage de l’analyse…";
+  $("#analysisProgressText").textContent="La caméra et le moteur d’analyse redémarrent complètement.";
+  $("#analysisGuide").textContent="Préparation…";
+  clearCanvas($("#analysisCanvas"));
+  clearSavedResults();
+
+  try{
+    await stopCameraAndModel();
+    await startCamera();
+    $("#analysisProgressTitle").textContent="Détection du visage";
+    $("#analysisProgressText").textContent="Regarde droit devant toi et reste immobile quelques secondes.";
+    $("#analysisGuide").textContent="Place ton visage face caméra";
+    const loopId=++analysisLoopId;
+    analyzeLoop(loopId);
+  }catch(err){
+    console.error("Erreur redémarrage analyse",err);
+    $("#analysisProgressTitle").textContent="Impossible de relancer";
+    $("#analysisProgressText").textContent="Ferme puis rouvre Safari et autorise la caméra.";
+  }
+}
+
 async function initLandmarker(){
   if(landmarker)return;
   const vision=await FilesetResolver.forVisionTasks(WASM_URL);
@@ -122,37 +194,8 @@ $("#beginAnalysisButton").addEventListener("click",async()=>{
   }
 });
 
-$("#cameraButton").addEventListener("click",async()=>{
-  liveRunning=false;
-  analysisLoopId++;
-  $("#appHeader").classList.add("hidden");
-  $("#bottomNav").classList.add("hidden");
-  $$(".tab-view").forEach(v=>v.classList.remove("active"));
-  $("#analysisProgress").classList.remove("hidden");
+$("#cameraButton").addEventListener("click",restartAnalysis);
 
-  stableFrames=0;
-  savedAnalysis=null;
-  latestLandmarks=null;
-  capturing=false;
-  lastTime=-1;
-
-  $("#analysisProgressTitle").textContent="Nouvelle analyse";
-  $("#analysisProgressText").textContent="Regarde droit devant toi et reste immobile.";
-  $("#analysisGuide").textContent="Place ton visage face caméra";
-  clearCanvas($("#analysisCanvas"));
-
-  try{
-    const analysisVideo=$("#analysisVideo");
-    analysisVideo.srcObject=stream;
-    await analysisVideo.play();
-    const loopId=++analysisLoopId;
-    analyzeLoop(loopId);
-  }catch(err){
-    console.error(err);
-    $("#analysisProgressTitle").textContent="Impossible de relancer";
-    $("#analysisProgressText").textContent="Recharge la page puis autorise de nouveau la caméra.";
-  }
-});
 
 function analyzeLoop(loopId){
   if(loopId!==analysisLoopId)return;
@@ -431,18 +474,34 @@ function mp(p,w,h,video){
   return{x:ox+(1-p.x)*drawW,y:oy+p.y*drawH};
 }
 function drawGuide(canvas,video,lm){
-  const {ctx,w,h}=fitCanvas(canvas,video);ctx.clearRect(0,0,w,h);if(!lm)return;
+  const {ctx,w,h}=fitCanvas(canvas,video);
+  ctx.clearRect(0,0,w,h);
+  if(!lm)return;
+
   const raw=FACE_OVAL.map(i=>mp(lm[i],w,h,video));
   const cx=raw.reduce((s,p)=>s+p.x,0)/raw.length;
   const cy=raw.reduce((s,p)=>s+p.y,0)/raw.length;
-  const pts=raw.map(p=>({x:cx+(p.x-cx)*.985,y:cy+(p.y-cy)*.985}));
-  ctx.strokeStyle="rgba(255,255,255,.82)";
-  ctx.fillStyle="rgba(255,255,255,.92)";
-  ctx.lineWidth=1.0;
+
+  // MediaPipe's outer oval sits near the hair/ear boundary.
+  // Pull it inward so the visible guide hugs the facial contour instead.
+  const pts=raw.map(p=>({
+    x:cx+(p.x-cx)*0.90,
+    y:cy+(p.y-cy)*0.94
+  }));
+
+  ctx.strokeStyle="rgba(255,255,255,.76)";
+  ctx.fillStyle="rgba(255,255,255,.88)";
+  ctx.lineWidth=.9;
   ctx.beginPath();
   pts.forEach((p,k)=>k?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));
-  ctx.closePath();ctx.stroke();
-  pts.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,1.15,0,Math.PI*2);ctx.fill()});
+  ctx.closePath();
+  ctx.stroke();
+
+  pts.forEach(p=>{
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,1.05,0,Math.PI*2);
+    ctx.fill();
+  });
 }
 function rgba(hex,a){const n=parseInt(hex.slice(1),16);return`rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`}
 function path(ctx,lm,ids,w,h,video){ids.forEach((i,k)=>{const p=mp(lm[i],w,h,video);k?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)})}
@@ -465,5 +524,12 @@ function drawMood(canvas,video,lm,mood){
 }
 
 if("serviceWorker" in navigator){
-  window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(console.error));
+  window.addEventListener("load",async()=>{
+  try{
+    const reg=await navigator.serviceWorker.register("./sw.js?v=9",{updateViaCache:"none"});
+    await reg.update();
+  }catch(err){
+    console.error(err);
+  }
+});
 }
