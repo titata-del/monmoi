@@ -210,7 +210,7 @@ function analyzeLoop(loopId){
       stableFrames++;
       $("#analysisGuide").textContent=stableFrames<12?"Reste bien face caméra":"Ne bouge plus";
       $("#analysisProgressTitle").textContent=stableFrames<12?"Visage détecté":"Analyse du visage…";
-      if(stableFrames>=16&&!capturing) captureWithFlash();
+      if(stableFrames>=16&&!capturing) captureAnalysis();
     }else{
       latestLandmarks=null; stableFrames=0;
       clearCanvas($("#analysisCanvas"));
@@ -221,44 +221,53 @@ function analyzeLoop(loopId){
   if(!savedAnalysis && loopId===analysisLoopId) raf=requestAnimationFrame(()=>analyzeLoop(loopId));
 }
 
-async function captureWithFlash(){
+async function captureAnalysis(){
   if(capturing||!latestLandmarks)return;
   capturing=true;
-  $("#analysisProgressTitle").textContent="Flash selfie";
-  $("#analysisProgressText").textContent="Ne bouge pas, lecture des couleurs…";
-
-  const flash=$("#globalScreenFlash");
-  flash.classList.remove("on");
-  void flash.offsetWidth;
-  flash.classList.add("on");
-
-  // The white edge glow lights the face while keeping the camera image visible.
-  // Sample after iPhone auto-exposure has had time to react.
-  await new Promise(r=>setTimeout(r,980));
+  $("#analysisProgressTitle").textContent="Analyse des détails";
+  $("#analysisProgressText").textContent="Reste immobile, lecture des yeux, de la peau et des couleurs…";
+  $("#analysisGuide").textContent="Regarde droit devant toi";
 
   try{
-    savedAnalysis=analyzeFace(latestLandmarks,$("#analysisVideo"));
+    const video=$("#analysisVideo");
+
+    // Geometry comes from the current stable landmark set.
+    const base=analyzeGeometry(latestLandmarks);
+
+    // Color is sampled over several live frames. This is especially important
+    // for irises: one frame can contain a blink, reflection or pupil-heavy sample.
+    const frames=[];
+    for(let i=0;i<9;i++){
+      await new Promise(r=>setTimeout(r,65));
+      if(latestLandmarks && video.readyState>=2){
+        frames.push(sampleRawColors(video,latestLandmarks));
+      }
+    }
+
+    if(frames.length<4) throw new Error("Pas assez d’images stables");
+    const colors=combineColorFrames(frames);
+    savedAnalysis={...base,...colors};
+
     updateAll(savedAnalysis);
   }catch(err){
-    console.error("Erreur capture",err);
+    console.error("Erreur analyse",err);
     savedAnalysis=null;
-  }finally{
-    flash.classList.remove("on");
   }
-  await new Promise(r=>setTimeout(r,220));
+
+  await new Promise(r=>setTimeout(r,150));
 
   if(!savedAnalysis){
     capturing=false;
     stableFrames=0;
     $("#analysisProgressTitle").textContent="On recommence";
-    $("#analysisProgressText").textContent="Reste face caméra quelques secondes.";
+    $("#analysisProgressText").textContent="Reste face caméra, yeux ouverts, quelques secondes.";
     return;
   }
 
   $("#analysisProgressTitle").textContent="Analyse terminée ✓";
   $("#analysisProgressText").textContent="Tes caractéristiques ont été enregistrées.";
 
-  await new Promise(r=>setTimeout(r,980));
+  await new Promise(r=>setTimeout(r,700));
   $("#analysisProgress").classList.add("hidden");
   $("#appHeader").classList.remove("hidden");
   $("#bottomNav").classList.remove("hidden");
@@ -266,71 +275,6 @@ async function captureWithFlash(){
   switchTab("mirror");
   startLiveViews();
 }
-
-async function startLiveViews(){
-  liveRunning=true;
-  for(const v of [$("#mirrorVideo"),$("#tryVideo"),$("#adviceVideo")]){
-    if(!v) continue;
-    v.srcObject=stream;
-    await v.play().catch(()=>{});
-  }
-  requestAnimationFrame(liveLoop);
-}
-function liveLoop(){
-  if(!liveRunning||!stream||!landmarker)return;
-  const v=$("#mirrorVideo");
-  if(v.readyState>=2){
-    const res=landmarker.detectForVideo(v,performance.now());
-    if(res.faceLandmarks?.length){
-      latestLandmarks=res.faceLandmarks[0];
-      drawGuide($("#mirrorCanvas"),v,latestLandmarks);
-      drawMakeup($("#tryCanvas"),$("#tryVideo"),latestLandmarks,activeEffect,activeColor,effectIntensity);
-      drawMood($("#adviceCanvas"),$("#adviceVideo"),latestLandmarks,activeMood);
-    }
-  }
-  if(liveRunning) requestAnimationFrame(liveLoop);
-}
-
-function switchTab(tab){
-  $$(".nav-button").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
-  $$(".tab-view").forEach(v=>v.classList.toggle("active",v.id===`tab-${tab}`));
-  $("#screenTitle").textContent=({mirror:"Miroir",analysis:"Analyse",try:"Essayer",advice:"Conseils",profile:"Profil"})[tab];
-}
-$$(".nav-button").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
-
-$$(".zone-chip").forEach(btn=>btn.addEventListener("click",()=>{
-  activeZone=btn.dataset.zone;
-  $$(".zone-chip").forEach(b=>b.classList.toggle("active",b===btn));
-  renderMirrorZone();
-}));
-
-const palettes={
-  brows:["#4c342f","#69483e","#8c6656","#2f2727"],
-  eyes:["#9a786f","#8c6d8f","#806f5b","#6b728b"],
-  blush:["#d98b96","#d47f72","#ba6e76","#c983a7"],
-  bronzer:["#a86f4b","#8d5e43","#bd8357","#79503d"],
-  lips:["#a34f5d","#b9656b","#8f4052","#c87875"],
-  complexion:["#e7b69d","#d99b80","#b7745d","#8a503f"]
-};
-function buildEffectColors(){
-  const wrap=$("#effectColors");wrap.innerHTML="";
-  const arr=palettes[activeEffect]||palettes.lips;activeColor=arr[0];
-  arr.forEach((c,i)=>{
-    const b=document.createElement("button");b.type="button";b.className="color-button"+(i===0?" active":"");b.style.background=c;
-    b.addEventListener("click",()=>{activeColor=c;$$(".color-button").forEach(x=>x.classList.remove("active"));b.classList.add("active")});
-    wrap.appendChild(b);
-  });
-}
-buildEffectColors();
-$$(".try-chip").forEach(btn=>btn.addEventListener("click",()=>{activeEffect=btn.dataset.effect;$$(".try-chip").forEach(b=>b.classList.toggle("active",b===btn));buildEffectColors()}));
-$("#effectIntensity").addEventListener("input",e=>effectIntensity=Number(e.target.value)/100);
-
-$$(".mood-card").forEach(btn=>btn.addEventListener("click",()=>{
-  activeMood=btn.dataset.mood;$$(".mood-card").forEach(b=>b.classList.toggle("active",b===btn));
-  const txt={soft:["Douce 🌸","Blush rosé diffus, lèvres fraîches et regard léger."],confident:["Confiante ✨","Sourcils structurés, teint lumineux et lèvres équilibrées."],bold:["Audacieuse 🔥","Regard plus intense, bronzer plus présent et lèvres affirmées."],chill:["Chill 😌","Teint naturel, blush très léger et couleurs discrètes."]}[activeMood];
-  $("#moodTitle").textContent=txt[0];$("#moodDescription").textContent=txt[1];
-}));
-
 function P(lm,i){return lm[i]}
 function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
 function avg(...v){return v.reduce((a,b)=>a+b,0)/v.length}
@@ -338,9 +282,7 @@ function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function deg(a,b){return Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI}
 function label3(v,a,b,labels){return v<a?labels[0]:v>b?labels[2]:labels[1]}
 
-function analyzeFace(lm,video){
-  prepareSample(video);
-
+function analyzeGeometry(lm){
   const faceW=dist(P(lm,234),P(lm,454));
   const faceH=dist(P(lm,10),P(lm,152));
   const ratio=faceH/(faceW||1);
@@ -375,10 +317,8 @@ function analyzeFace(lm,video){
   const jaw=label3(jawW,.66,.76,["fine","moyenne","large"]);
   const chin=chinWidth<.24?"pointu":chinWidth>.34?"large et arrondi":"arrondi";
 
-  const colors=sampleColors(video,lm);
-  return {faceShape,forehead,eyeShape,eyeTiltLabel,browSize,browShape,lipWidth,lipVolume,lipShape,jaw,chin,...colors};
+  return {faceShape,forehead,eyeShape,eyeTiltLabel,browSize,browShape,lipWidth,lipVolume,lipShape,jaw,chin};
 }
-
 function prepareSample(video){
   const w=video.videoWidth,h=video.videoHeight;if(!w||!h)return false;
   sampleCanvas.width=w;sampleCanvas.height=h;sampleCtx.drawImage(video,0,0,w,h);return true;
@@ -396,150 +336,229 @@ function lum([r,g,b]){return .2126*r+.7152*g+.0722*b}
 
 
 function rgbToHsv([r,g,b]){
-  r/=255; g/=255; b/=255;
-  const max=Math.max(r,g,b), min=Math.min(r,g,b), d=max-min;
+  r/=255;g/=255;b/=255;
+  const max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min;
   let h=0;
   if(d!==0){
-    if(max===r) h=((g-b)/d)%6;
-    else if(max===g) h=(b-r)/d+2;
+    if(max===r)h=((g-b)/d)%6;
+    else if(max===g)h=(b-r)/d+2;
     else h=(r-g)/d+4;
-    h*=60;
-    if(h<0) h+=360;
+    h*=60;if(h<0)h+=360;
   }
-  const s=max===0?0:d/max;
-  return [h,s,max];
+  return[h,max===0?0:d/max,max];
+}
+function saturation(rgb){return rgbToHsv(rgb)[1]}
+function median(values){
+  const a=[...values].sort((x,y)=>x-y);
+  return a[Math.floor(a.length/2)];
 }
 function medianColor(samples){
-  const channels=[0,1,2].map(ch=>{
-    const vals=samples.map(c=>c[ch]).sort((a,b)=>a-b);
-    return vals[Math.floor(vals.length/2)];
-  });
-  return channels;
+  if(!samples.length)return[128,128,128];
+  return[0,1,2].map(ch=>Math.round(median(samples.map(c=>c[ch]))));
 }
-function sampleCluster(video,lm,ids,r=2){
-  const pts=[];
-  for(const id of ids){
-    const p=P(lm,id);
-    if(p) pts.push(getPixel(video,p.x,p.y,r));
+function meanColor(samples){
+  if(!samples.length)return[128,128,128];
+  return[0,1,2].map(ch=>Math.round(samples.reduce((s,c)=>s+c[ch],0)/samples.length));
+}
+function interpolatePoint(a,b,t){
+  return{x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t};
+}
+function applyGain(rgb,g){
+  return rgb.map((v,i)=>Math.round(clamp(v*g[i],0,255)));
+}
+function whiteBalanceGains(video,lm){
+  const samples=[];
+  const eyes=[
+    [P(lm,468),P(lm,33),P(lm,133)],
+    [P(lm,473),P(lm,362),P(lm,263)]
+  ];
+  for(const [center,c1,c2] of eyes){
+    if(!center||!c1||!c2)continue;
+    for(const corner of [c1,c2]){
+      for(const t of [.58,.68]){
+        const p=interpolatePoint(center,corner,t);
+        const c=getPixel(video,p.x,p.y,1);
+        const L=lum(c),S=saturation(c);
+        // Keep likely sclera/reflection-neutral pixels, reject skin and deep shadow.
+        if(L>115&&L<245&&S<.32)samples.push(c);
+      }
+    }
   }
-  return pts.length?medianColor(pts):[128,128,128];
+  if(samples.length<2)return[1,1,1];
+  const w=meanColor(samples);
+  const target=(w[0]+w[1]+w[2])/3;
+  return w.map(v=>clamp(target/(v||target),.78,1.28));
+}
+function irisRingSamples(video,lm,gains){
+  const all=[];
+  const definitions=[
+    {center:468,ring:[469,470,471,472]},
+    {center:473,ring:[474,475,476,477]}
+  ];
+  for(const def of definitions){
+    const center=P(lm,def.center);
+    if(!center)continue;
+    for(const id of def.ring){
+      const edge=P(lm,id);
+      if(!edge)continue;
+      // Sample the colored annulus, not the dark pupil center and not the white sclera.
+      for(const t of [.52,.62,.70]){
+        const p=interpolatePoint(center,edge,t);
+        let c=getPixel(video,p.x,p.y,1);
+        c=applyGain(c,gains);
+        const L=lum(c),S=saturation(c);
+        if(L>38&&L<220&&S>.035)all.push(c);
+      }
+    }
+  }
+  return all;
+}
+function trimColorSamples(samples){
+  if(samples.length<5)return samples;
+  const ls=samples.map(lum);
+  const lo=[...ls].sort((a,b)=>a-b)[Math.floor(ls.length*.12)];
+  const hi=[...ls].sort((a,b)=>a-b)[Math.floor(ls.length*.88)];
+  return samples.filter(c=>lum(c)>=lo&&lum(c)<=hi);
 }
 function irisName(rgb){
-  const [h,s,v]=rgbToHsv(rgb);
+  const[h,s,v]=rgbToHsv(rgb);
   const l=lum(rgb);
-  if(l<42) return "brun presque noir";
-  if(s<.16){
-    if(l>145) return "gris clair";
-    if(l>100) return "gris";
-    return "gris foncé";
+
+  if(s<.075){
+    if(l>145)return"gris clair";
+    if(l>95)return"gris";
+    return"gris foncé";
   }
-  if(h>=185&&h<=250){
-    if(s<.34) return "bleu-gris";
-    return v>.58?"bleu clair":"bleu profond";
+  if(h>=175&&h<=260){
+    if(s<.22)return l>115?"bleu-gris clair":"bleu-gris";
+    if(h>205&&s>.30)return v>.58?"bleu":"bleu profond";
+    return v>.60?"bleu clair":"bleu-gris";
   }
-  if(h>=70&&h<185){
-    if(h<95&&s>.28) return "vert noisette";
-    if(s<.30) return "vert-gris";
-    return v>.52?"vert clair":"vert profond";
+  if(h>=80&&h<175){
+    if(s<.18)return"gris-vert";
+    if(h<105&&s>.24)return"vert noisette";
+    return v>.56?"vert clair":"vert";
   }
-  if(h>=35&&h<70){
-    if(s>.42&&v>.45) return "ambre";
-    return "noisette doré";
+  if(h>=48&&h<80){
+    if(s>.30&&v>.48)return"vert noisette";
+    return"noisette clair";
   }
-  if(h>=18&&h<45){
-    if(l>120) return "brun clair";
-    if(l>78) return "brun noisette";
-    return "brun foncé";
+  if(h>=34&&h<48){
+    if(s>.38&&v>.48)return"ambre";
+    return"noisette doré";
   }
-  return l>105?"brun clair":"brun foncé";
+  if(h>=18&&h<34){
+    if(l>125&&s<.36)return"noisette clair";
+    if(l>95)return"brun noisette";
+    return"brun";
+  }
+  if(l<60)return"brun très foncé";
+  return s<.20?"gris-brun":"brun";
 }
 function browName(rgb){
-  const [h,s,v]=rgbToHsv(rgb);
-  const l=lum(rgb);
-  if(l<42) return "brun-noir";
-  if(l<68) return "brun très foncé";
+  const[h,s,v]=rgbToHsv(rgb),l=lum(rgb);
+  if(l<42)return"brun-noir";
+  if(l<68)return"brun très foncé";
   if(l<92){
-    if(h<22||h>345) return "brun froid";
-    if(h>32&&h<55) return "brun chaud";
-    return "brun neutre";
+    if(h>30&&h<55)return"brun chaud";
+    if(s<.18)return"brun cendré";
+    return"brun neutre";
   }
   if(l<122){
-    if(h>30&&h<55) return "châtain chaud";
-    if(s<.18) return "châtain cendré";
-    return "châtain moyen";
+    if(h>30&&h<55)return"châtain chaud";
+    if(s<.18)return"châtain cendré";
+    return"châtain moyen";
   }
-  if(l<155) return s<.20?"châtain clair cendré":"châtain clair";
+  if(l<155)return s<.20?"châtain clair cendré":"châtain clair";
   return h>35&&h<60?"blond doré":"blond cendré";
 }
 function lipName(rgb){
-  const [h,s,v]=rgbToHsv(rgb);
-  const l=lum(rgb);
-  if(s<.15) return l>155?"beige rosé clair":"beige rosé";
+  const[h,s,v]=rgbToHsv(rgb),l=lum(rgb);
+  if(s<.15)return l>155?"beige rosé clair":"beige rosé";
   if(h>=345||h<8){
-    if(l<115) return "bois de rose profond";
-    if(l<150) return "bois de rose";
-    return "rose nude";
+    if(l<115)return"bois de rose profond";
+    if(l<150)return"bois de rose";
+    return"rose nude";
   }
   if(h>=8&&h<24){
-    if(s>.38&&l>135) return "corail doux";
-    if(l>150) return "rose pêche";
-    return "rose chaud";
+    if(s>.38&&l>135)return"corail doux";
+    if(l>150)return"rose pêche";
+    return"rose chaud";
   }
   if(h>=320&&h<345){
-    if(l<120) return "vieux rose profond";
-    if(s<.28) return "mauve rosé";
-    return "vieux rose";
+    if(l<120)return"vieux rose profond";
+    if(s<.28)return"mauve rosé";
+    return"vieux rose";
   }
-  if(h>=300&&h<320) return "mauve rosé";
+  if(h>=300&&h<320)return"mauve rosé";
   return l>150?"rose naturel clair":"rose naturel";
 }
 function skinName(c){
   const l=lum(c);
-  if(l>220) return "très claire";
-  if(l>195) return "claire";
-  if(l>168) return "claire à moyenne";
-  if(l>140) return "moyenne";
-  if(l>112) return "moyenne à mate";
-  if(l>88) return "mate";
-  if(l>62) return "foncée";
-  return "profonde";
+  if(l>220)return"très claire";
+  if(l>195)return"claire";
+  if(l>168)return"claire à moyenne";
+  if(l>140)return"moyenne";
+  if(l>112)return"moyenne à mate";
+  if(l>88)return"mate";
+  if(l>62)return"foncée";
+  return"profonde";
 }
-
-function sampleColors(video,lm){
+function sampleCluster(video,lm,ids,r=2,gains=[1,1,1]){
+  const pts=[];
+  for(const id of ids){
+    const p=P(lm,id);
+    if(p)pts.push(applyGain(getPixel(video,p.x,p.y,r),gains));
+  }
+  return medianColor(pts);
+}
+function sampleRawColors(video,lm){
   prepareSample(video);
+  const gains=whiteBalanceGains(video,lm);
 
   const skin=medianColor([
-    getPixel(video,P(lm,123).x,P(lm,123).y,3),
-    getPixel(video,P(lm,352).x,P(lm,352).y,3),
-    getPixel(video,P(lm,9).x,P(lm,9).y,3),
-    getPixel(video,P(lm,50).x,P(lm,50).y,3),
-    getPixel(video,P(lm,280).x,P(lm,280).y,3)
-  ]);
+    P(lm,123),P(lm,352),P(lm,9),P(lm,50),P(lm,280)
+  ].filter(Boolean).map(p=>applyGain(getPixel(video,p.x,p.y,3),gains)));
 
-  const lips=sampleCluster(video,lm,[13,14,61,291,78,308],2);
-  const brows=sampleCluster(video,lm,[70,63,105,107,300,293,334,336],2);
+  const lips=sampleCluster(video,lm,[13,14,61,291,78,308],2,gains);
+  const brows=sampleCluster(video,lm,[70,63,105,107,300,293,334,336],2,gains);
 
-  const irisSamples=[];
-  for(const id of [468,469,470,471,472,473,474,475,476,477]){
-    const p=P(lm,id);
-    if(p) irisSamples.push(getPixel(video,p.x,p.y,1));
-  }
-  if(!irisSamples.length){
-    irisSamples.push(getPixel(video,P(lm,159).x,P(lm,159).y,1));
-    irisSamples.push(getPixel(video,P(lm,386).x,P(lm,386).y,1));
+  let irisSamples=trimColorSamples(irisRingSamples(video,lm,gains));
+  // If eye reflections made too many samples unusable, retry without saturation rejection.
+  if(irisSamples.length<5){
+    irisSamples=[];
+    for(const def of [{center:468,ring:[469,470,471,472]},{center:473,ring:[474,475,476,477]}]){
+      const center=P(lm,def.center);
+      if(!center)continue;
+      for(const id of def.ring){
+        const edge=P(lm,id);
+        if(!edge)continue;
+        const p=interpolatePoint(center,edge,.62);
+        const c=applyGain(getPixel(video,p.x,p.y,1),gains);
+        if(lum(c)>30&&lum(c)<225)irisSamples.push(c);
+      }
+    }
   }
   const iris=medianColor(irisSamples);
 
-  const [h,s,v]=rgbToHsv(skin);
+  return{skin,lips,brows,iris};
+}
+function combineColorFrames(frames){
+  const skin=medianColor(frames.map(f=>f.skin));
+  const lips=medianColor(frames.map(f=>f.lips));
+  const brows=medianColor(frames.map(f=>f.brows));
+  const iris=medianColor(frames.map(f=>f.iris));
+
+  const[h,s,v]=rgbToHsv(skin);
   let undertone="neutre";
-  if(h>=18&&h<=50&&s>.16) undertone="chaud";
-  else if((h<15||h>330)&&s>.12) undertone="froid";
-  else if(h>=50&&h<=95&&s>.12) undertone="olive";
+  if(h>=18&&h<=50&&s>.16)undertone="chaud";
+  else if((h<15||h>330)&&s>.12)undertone="froid";
+  else if(h>=50&&h<=95&&s>.12)undertone="olive";
 
   const contrastValue=Math.abs(lum(skin)-lum(iris));
   const contrast=contrastValue>=100?"fort":contrastValue>=60?"moyen":"doux";
 
-  return {
+  return{
     skinHex:hex(skin),skinName:skinName(skin),
     lipHex:hex(lips),lipName:lipName(lips),
     browHex:hex(brows),browName:browName(brows),
@@ -547,7 +566,6 @@ function sampleColors(video,lm){
     undertone,contrast
   };
 }
-
 function colorPill(name,color){
   return `<span class="detected-color"><span class="detected-color-dot" style="background:${color}"></span>${name}</span>`;
 }
@@ -657,7 +675,7 @@ function drawMood(canvas,video,lm,mood){
 if("serviceWorker" in navigator){
   window.addEventListener("load",async()=>{
   try{
-    const reg=await navigator.serviceWorker.register("./sw.js?v=11",{updateViaCache:"none"});
+    const reg=await navigator.serviceWorker.register("./sw.js?v=12",{updateViaCache:"none"});
     await reg.update();
   }catch(err){
     console.error(err);

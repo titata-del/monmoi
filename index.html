@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="Beauty Mirror">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=11">
+  <link rel="stylesheet" href="./styles.css?v=12">
   <title>Beauty Mirror</title>
 </head>
 <body>
@@ -24,13 +24,18 @@
     </section>
 
     <section id="mainApp" class="main-app hidden">
-      <div id="globalScreenFlash" class="global-screen-flash" aria-hidden="true"></div>
       <section id="analysisIntro" class="analysis-intro">
-        <div class="intro-card glass">
-          <div class="intro-icon">✦</div>
-          <h2>Analyse du visage</h2>
-          <p>Regarde droit devant toi. L’app détecte ton visage, déclenche un flash écran et enregistre tes caractéristiques.</p>
-          <button id="beginAnalysisButton" class="primary-button" type="button">Commencer l’analyse</button>
+        <div class="intro-card intro-light-card glass">
+          <div class="intro-light-orb" aria-hidden="true">☀︎</div>
+          <h2>Avant l’analyse</h2>
+          <p class="intro-main-copy">Place-toi près d’une <strong>source de lumière naturelle</strong> ou d’une lampe blanche, face à la lumière.</p>
+          <div class="light-tips">
+            <div><span>✓</span> Visage entièrement éclairé</div>
+            <div><span>✓</span> Pas de contre-jour</div>
+            <div><span>✓</span> Évite une lumière très jaune ou colorée</div>
+            <div><span>✓</span> Regarde droit devant toi, yeux bien ouverts</div>
+          </div>
+          <button id="beginAnalysisButton" class="primary-button" type="button">Je suis bien éclairé(e)</button>
         </div>
       </section>
       <section id="analysisProgress" class="analysis-progress hidden">
@@ -49,7 +54,7 @@
 
       <header id="appHeader" class="topbar glass hidden">
         <div>
-          <div class="title-row"><div id="screenTitle" class="screen-title">Miroir</div><span class="version-badge">V11</span></div>
+          <div class="title-row"><div id="screenTitle" class="screen-title">Miroir</div><span class="version-badge">V12</span></div>
           <div id="cameraStatus" class="status-text">Analyse requise</div>
         </div>
         <button id="cameraButton" class="mini-button" type="button">Refaire l’analyse</button>
@@ -60,7 +65,6 @@
           <div class="camera-stage">
             <video id="mirrorVideo" autoplay playsinline muted></video>
             <canvas id="mirrorCanvas"></canvas>
-            <div id="screenFlash" class="screen-flash" aria-hidden="true"></div>
             <div id="guideMessage" class="guide-message">Active la caméra pour commencer</div>
           </div>
         </div>
@@ -222,6 +226,6 @@
     </section>
   </main>
 
-  <script type="module" src="./app.js?v=11"></script>
+  <script type="module" src="./app.js?v=12"></script>
 </body>
 </html>
