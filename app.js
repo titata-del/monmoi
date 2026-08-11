@@ -286,6 +286,14 @@ $$(".nav-button").forEach(btn=>{
   btn.addEventListener("click",()=>switchTab(btn.dataset.tab));
 });
 
+$$(".zone-chip").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    activeZone=btn.dataset.zone;
+    $$(".zone-chip").forEach(b=>b.classList.toggle("active",b===btn));
+    renderMirrorZone();
+  });
+});
+
 async function startLiveViews(){
   liveRunning=true;
   activeAppTab="mirror";
@@ -836,8 +844,9 @@ function renderMirrorZone(){
     lips:["Lèvres",`Forme ${a.lipShape}. Largeur ${a.lipWidth}. Volume ${a.lipVolume}.<br>Couleur ${colorPill(a.lipName,a.lipHex)}`],
     jaw:["Mâchoire",`Mâchoire ${a.jaw}. Menton ${a.chin}.`],
     skin:["Peau",`Teinte ${colorPill(a.skinName,a.skinHex)} · sous-ton ${a.undertone} · contraste ${a.contrast}.`]
-  }[activeZone];
-  $("#mirrorResultTitle").textContent=data[0];$("#mirrorResult").innerHTML=data[1];
+  }[activeZone] || ["Visage",`Forme ${a.faceShape}.`];
+  $("#mirrorResultTitle").textContent=data[0];
+  $("#mirrorResult").innerHTML=data[1];
 }
 
 function fitCanvas(canvas,video){
@@ -908,7 +917,7 @@ function drawMood(canvas,video,lm,mood){
 if("serviceWorker" in navigator){
   window.addEventListener("load",async()=>{
   try{
-    const reg=await navigator.serviceWorker.register("./sw.js?v=15",{updateViaCache:"none"});
+    const reg=await navigator.serviceWorker.register("./sw.js?v=16",{updateViaCache:"none"});
     await reg.update();
   }catch(err){
     console.error(err);

@@ -334,3 +334,18 @@ button{touch-action:manipulation}
   backdrop-filter:blur(16px);
   -webkit-backdrop-filter:blur(16px);
 }
+
+
+.zone-chip{
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  cursor:pointer;
+  position:relative;
+  z-index:2;
+  min-height:42px;
+}
+.zone-strip{
+  position:relative;
+  z-index:8;
+  -webkit-overflow-scrolling:touch;
+}
