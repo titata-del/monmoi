@@ -60,26 +60,44 @@ const videos=()=>[$("#analysisVideo"),$("#mirrorVideo"),$("#tryVideo"),$("#advic
 async function initLandmarker(){
   if(landmarker)return;
   const vision=await FilesetResolver.forVisionTasks(WASM_URL);
-  landmarker=await FaceLandmarker.createFromOptions(vision,{
-    baseOptions:{modelAssetPath:MODEL_URL,delegate:"GPU"},
+  const options={
     runningMode:"VIDEO",
     numFaces:1,
-    minFaceDetectionConfidence:.62,
-    minFacePresenceConfidence:.62,
-    minTrackingConfidence:.62,
+    minFaceDetectionConfidence:.58,
+    minFacePresenceConfidence:.58,
+    minTrackingConfidence:.58,
     outputFaceBlendshapes:false,
     outputFacialTransformationMatrixes:false
-  });
+  };
+  try{
+    landmarker=await FaceLandmarker.createFromOptions(vision,{
+      ...options,
+      baseOptions:{modelAssetPath:MODEL_URL,delegate:"GPU"}
+    });
+  }catch(gpuError){
+    console.warn("GPU indisponible, bascule CPU",gpuError);
+    landmarker=await FaceLandmarker.createFromOptions(vision,{
+      ...options,
+      baseOptions:{modelAssetPath:MODEL_URL,delegate:"CPU"}
+    });
+  }
 }
 
 async function startCamera(){
   if(!stream){
     stream=await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:{ideal:"user"},width:{ideal:720},height:{ideal:960}},
+      video:{
+        facingMode:{ideal:"user"},
+        width:{ideal:480,max:720},
+        height:{ideal:640,max:960},
+        frameRate:{ideal:24,max:30}
+      },
       audio:false
     });
   }
-  for(const v of videos()){v.srcObject=stream; await v.play().catch(()=>{})}
+  const analysisVideo=$("#analysisVideo");
+  analysisVideo.srcObject=stream;
+  await analysisVideo.play();
   await initLandmarker();
 }
 
@@ -95,8 +113,8 @@ $("#beginAnalysisButton").addEventListener("click",async()=>{
     analyzeLoop();
   }catch(e){
     console.error(e);
-    $("#analysisProgressTitle").textContent="Caméra indisponible";
-    $("#analysisProgressText").textContent="Autorise l’accès à la caméra dans Safari puis relance l’analyse.";
+    $("#analysisProgressTitle").textContent="Analyse impossible";
+    $("#analysisProgressText").textContent="Sur iPhone : ouvre le site dans Safari, autorise la caméra puis recharge la page. Si la caméra est déjà autorisée, ferme l’app et relance-la.";
   }
 });
 
@@ -140,17 +158,33 @@ async function captureWithFlash(){
   $("#analysisProgressText").textContent="Ne bouge pas.";
 
   const flash=$("#globalScreenFlash");
+  flash.classList.remove("on");
+  void flash.offsetWidth;
   flash.classList.add("on");
 
-  // Strong but safe front-screen flash: only the overlay is used.
-  await new Promise(r=>setTimeout(r,700));
+  // The white edge glow lights the face while keeping the camera image visible.
+  // Sample after iPhone auto-exposure has had time to react.
+  await new Promise(r=>setTimeout(r,620));
 
-  savedAnalysis=analyzeFace(latestLandmarks,$("#analysisVideo"));
+  try{
+    savedAnalysis=analyzeFace(latestLandmarks,$("#analysisVideo"));
+    updateAll(savedAnalysis);
+  }catch(err){
+    console.error("Erreur capture",err);
+    savedAnalysis=null;
+  }finally{
+    flash.classList.remove("on");
+  }
+  await new Promise(r=>setTimeout(r,220));
 
-  flash.classList.remove("on");
-  await new Promise(r=>setTimeout(r,180));
+  if(!savedAnalysis){
+    capturing=false;
+    stableFrames=0;
+    $("#analysisProgressTitle").textContent="On recommence";
+    $("#analysisProgressText").textContent="Reste face caméra quelques secondes.";
+    return;
+  }
 
-  updateAll(savedAnalysis);
   $("#analysisProgressTitle").textContent="Analyse terminée ✓";
   $("#analysisProgressText").textContent="Tes caractéristiques ont été enregistrées.";
 
@@ -163,8 +197,12 @@ async function captureWithFlash(){
   startLiveViews();
 }
 
-function startLiveViews(){
-  for(const v of [$("#mirrorVideo"),$("#tryVideo"),$("#adviceVideo")]) if(v) v.srcObject=stream;
+async function startLiveViews(){
+  for(const v of [$("#mirrorVideo"),$("#tryVideo"),$("#adviceVideo")]){
+    if(!v) continue;
+    v.srcObject=stream;
+    await v.play().catch(()=>{});
+  }
   requestAnimationFrame(liveLoop);
 }
 function liveLoop(){
