@@ -6,3 +6,7 @@
 - Les 5 interfaces sont accessibles seulement après « Analyse terminée ✓ ».
 - Les couleurs yeux, sourcils, lèvres et peau sont enregistrées pendant l'analyse initiale.
 - Déploiement : GitHub Pages en HTTPS.
+
+
+## V5
+Flash écran selfie renforcé : blanc plein écran plus intense et plus long avant la capture des couleurs.

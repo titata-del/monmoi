@@ -140,16 +140,22 @@ async function captureWithFlash(){
   $("#analysisProgressText").textContent="Ne bouge pas.";
 
   const flash=$("#globalScreenFlash");
+  const previousBackground=document.documentElement.style.backgroundColor;
+  const previousFilter=document.body.style.filter;
+  document.documentElement.style.backgroundColor="#ffffff";
+  document.body.style.filter="brightness(1.18)";
   flash.classList.add("on");
 
-  // Same principle as selfie screen flash: the whole display becomes bright white
-  // long enough to illuminate the face before sampling camera pixels.
-  await new Promise(r=>setTimeout(r,750));
+  // Strong front-screen selfie flash: illuminate first, then sample colors.
+  await new Promise(r=>setTimeout(r,1150));
 
   savedAnalysis=analyzeFace(latestLandmarks,$("#analysisVideo"));
 
-  flash.classList.remove("on");
   await new Promise(r=>setTimeout(r,180));
+  flash.classList.remove("on");
+  document.documentElement.style.backgroundColor=previousBackground;
+  document.body.style.filter=previousFilter;
+  await new Promise(r=>setTimeout(r,220));
 
   updateAll(savedAnalysis);
   $("#analysisProgressTitle").textContent="Analyse terminée ✓";

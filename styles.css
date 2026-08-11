@@ -111,13 +111,17 @@ button{touch-action:manipulation}
 .global-screen-flash{
   position:fixed;
   inset:0;
-  z-index:9999;
-  background:#fff;
+  z-index:99999;
+  background:#ffffff;
   opacity:0;
   pointer-events:none;
-  transition:opacity .06s linear;
+  transition:opacity .025s linear;
+  box-shadow:0 0 0 120vmax #fff,inset 0 0 180px rgba(255,255,255,1);
 }
-.global-screen-flash.on{opacity:1}
+.global-screen-flash.on{
+  opacity:1;
+  filter:brightness(1.55);
+}
 
 .analysis-intro{
   min-height:calc(100dvh - 30px);
