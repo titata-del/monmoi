@@ -1,9 +1,10 @@
-# Beauty Mirror V13 — Iris renforcé
+# Beauty Mirror V14 — Correctif écran blanc
 
-- Lecture dense de l’anneau de l’iris, pas de la pupille.
-- Deux yeux analysés.
-- 15 images successives.
-- Vote couleur pixel par pixel plutôt qu’une moyenne RGB qui grise les iris clairs.
-- Rejet des pixels trop sombres (pupille) et trop clairs (reflets/blanc de l’œil).
-- Gris retenu uniquement si la neutralité domine réellement.
-- Badge V13 visible.
+Correction du bug V13 après l’analyse :
+- restauration de la navigation entre les 5 interfaces ;
+- restauration de la caméra live après l’analyse ;
+- affichage du Miroir avant de relancer les vues secondaires ;
+- une erreur de caméra secondaire ne peut plus laisser une page blanche ;
+- toute la précision iris de V13 est conservée.
+
+Badge V14 visible pour vérifier que la bonne version est chargée.

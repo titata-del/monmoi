@@ -221,6 +221,64 @@ function analyzeLoop(loopId){
   if(!savedAnalysis && loopId===analysisLoopId) raf=requestAnimationFrame(()=>analyzeLoop(loopId));
 }
 
+
+function switchTab(tab){
+  const titles={mirror:"Miroir",analysis:"Analyse",try:"Essayer",advice:"Conseils",profile:"Profil"};
+  $$(".nav-button").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
+  $$(".tab-view").forEach(v=>v.classList.toggle("active",v.id===`tab-${tab}`));
+  $("#screenTitle").textContent=titles[tab]||"Miroir";
+}
+
+$$(".nav-button").forEach(btn=>{
+  btn.addEventListener("click",()=>switchTab(btn.dataset.tab));
+});
+
+async function startLiveViews(){
+  liveRunning=true;
+  const targets=[$("#mirrorVideo"),$("#tryVideo"),$("#adviceVideo")];
+  for(const v of targets){
+    if(!v) continue;
+    try{
+      v.srcObject=stream;
+      await v.play();
+    }catch(err){
+      console.warn("Lecture vidéo secondaire impossible",err);
+    }
+  }
+  requestAnimationFrame(liveLoop);
+}
+
+function liveLoop(){
+  if(!liveRunning||!stream||!landmarker)return;
+
+  const v=$("#mirrorVideo");
+  if(v && v.readyState>=2){
+    try{
+      const res=landmarker.detectForVideo(v,performance.now());
+      if(res.faceLandmarks?.length){
+        latestLandmarks=res.faceLandmarks[0];
+        drawGuide($("#mirrorCanvas"),v,latestLandmarks);
+
+        const tryVideo=$("#tryVideo");
+        const adviceVideo=$("#adviceVideo");
+
+        if(tryVideo?.readyState>=2){
+          drawMakeup($("#tryCanvas"),tryVideo,latestLandmarks,activeEffect,activeColor,effectIntensity);
+        }
+        if(adviceVideo?.readyState>=2){
+          drawMood($("#adviceCanvas"),adviceVideo,latestLandmarks,activeMood);
+        }
+      }else{
+        clearCanvas($("#mirrorCanvas"));
+      }
+    }catch(err){
+      console.warn("Boucle caméra secondaire",err);
+    }
+  }
+
+  if(liveRunning) requestAnimationFrame(liveLoop);
+}
+
 async function captureAnalysis(){
   if(capturing||!latestLandmarks)return;
   capturing=true;
@@ -268,12 +326,22 @@ async function captureAnalysis(){
   $("#analysisProgressText").textContent="Tes caractéristiques ont été enregistrées.";
 
   await new Promise(r=>setTimeout(r,700));
+
+  // Always reveal the app first. A secondary camera error must never leave a blank screen.
   $("#analysisProgress").classList.add("hidden");
+  $("#analysisIntro").classList.add("hidden");
   $("#appHeader").classList.remove("hidden");
   $("#bottomNav").classList.remove("hidden");
   $("#cameraStatus").textContent="Analyse terminée ✓";
   switchTab("mirror");
-  startLiveViews();
+
+  try{
+    await startLiveViews();
+  }catch(err){
+    console.error("Ouverture du miroir impossible",err);
+    $("#cameraStatus").textContent="Analyse terminée ✓";
+    $("#guideMessage").textContent="Analyse enregistrée";
+  }
 }
 function P(lm,i){return lm[i]}
 function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
@@ -783,7 +851,7 @@ function drawMood(canvas,video,lm,mood){
 if("serviceWorker" in navigator){
   window.addEventListener("load",async()=>{
   try{
-    const reg=await navigator.serviceWorker.register("./sw.js?v=13",{updateViaCache:"none"});
+    const reg=await navigator.serviceWorker.register("./sw.js?v=14",{updateViaCache:"none"});
     await reg.update();
   }catch(err){
     console.error(err);
