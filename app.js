@@ -225,7 +225,7 @@ async function captureAnalysis(){
   if(capturing||!latestLandmarks)return;
   capturing=true;
   $("#analysisProgressTitle").textContent="Analyse des détails";
-  $("#analysisProgressText").textContent="Reste immobile, lecture des yeux, de la peau et des couleurs…";
+  $("#analysisProgressText").textContent="Reste immobile et garde les yeux bien ouverts : lecture détaillée des deux iris…";
   $("#analysisGuide").textContent="Regarde droit devant toi";
 
   try{
@@ -237,8 +237,8 @@ async function captureAnalysis(){
     // Color is sampled over several live frames. This is especially important
     // for irises: one frame can contain a blink, reflection or pupil-heavy sample.
     const frames=[];
-    for(let i=0;i<9;i++){
-      await new Promise(r=>setTimeout(r,65));
+    for(let i=0;i<15;i++){
+      await new Promise(r=>setTimeout(r,70));
       if(latestLandmarks && video.readyState>=2){
         frames.push(sampleRawColors(video,latestLandmarks));
       }
@@ -389,71 +389,195 @@ function whiteBalanceGains(video,lm){
   const target=(w[0]+w[1]+w[2])/3;
   return w.map(v=>clamp(target/(v||target),.78,1.28));
 }
-function irisRingSamples(video,lm,gains){
-  const all=[];
-  const definitions=[
+function irisEllipse(video,lm,centerId,ringIds){
+  const center=P(lm,centerId);
+  const ring=ringIds.map(id=>P(lm,id)).filter(Boolean);
+  if(!center||ring.length<4)return null;
+  const xs=ring.map(p=>Math.abs(p.x-center.x));
+  const ys=ring.map(p=>Math.abs(p.y-center.y));
+  const rx=Math.max(...xs);
+  const ry=Math.max(...ys);
+  if(rx<=0||ry<=0)return null;
+  return{center,rx,ry};
+}
+
+function denseIrisPixels(video,lm,gains){
+  const samples=[];
+  const defs=[
     {center:468,ring:[469,470,471,472]},
     {center:473,ring:[474,475,476,477]}
   ];
-  for(const def of definitions){
-    const center=P(lm,def.center);
-    if(!center)continue;
-    for(const id of def.ring){
-      const edge=P(lm,id);
-      if(!edge)continue;
-      // Sample the colored annulus, not the dark pupil center and not the white sclera.
-      for(const t of [.52,.62,.70]){
-        const p=interpolatePoint(center,edge,t);
-        let c=getPixel(video,p.x,p.y,1);
+
+  for(const def of defs){
+    const e=irisEllipse(video,lm,def.center,def.ring);
+    if(!e)continue;
+
+    // Dense annulus sampling. The center/pupil is excluded and the very outer
+    // edge is excluded to avoid sclera/eyelid contamination.
+    for(const rf of [.48,.56,.64,.72,.79]){
+      for(let k=0;k<32;k++){
+        const a=(Math.PI*2*k)/32;
+        const p={
+          x:e.center.x+Math.cos(a)*e.rx*rf,
+          y:e.center.y+Math.sin(a)*e.ry*rf
+        };
+        let c=getPixel(video,p.x,p.y,0);
         c=applyGain(c,gains);
-        const L=lum(c),S=saturation(c);
-        if(L>38&&L<220&&S>.035)all.push(c);
+        const L=lum(c);
+        if(L<28||L>225)continue; // pupil/specular/sclera
+        samples.push(c);
       }
     }
   }
-  return all;
+  return samples;
 }
-function trimColorSamples(samples){
-  if(samples.length<5)return samples;
-  const ls=samples.map(lum);
-  const lo=[...ls].sort((a,b)=>a-b)[Math.floor(ls.length*.12)];
-  const hi=[...ls].sort((a,b)=>a-b)[Math.floor(ls.length*.88)];
-  return samples.filter(c=>lum(c)>=lo&&lum(c)<=hi);
-}
-function irisName(rgb){
-  const[h,s,v]=rgbToHsv(rgb);
-  const l=lum(rgb);
 
-  if(s<.075){
-    if(l>145)return"gris clair";
-    if(l>95)return"gris";
-    return"gris foncé";
+function irisPixelFamily(rgb){
+  const [r,g,b]=rgb;
+  const max=Math.max(r,g,b),min=Math.min(r,g,b);
+  const chroma=max-min;
+  const L=lum(rgb);
+
+  // Channel-opponent differences are more robust than HSV saturation for
+  // pale blue/green irises that phone cameras often desaturate.
+  const blue=b-(r+g)/2;
+  const green=g-(r+b)/2;
+  const warm=(r-b)+0.28*(g-b);
+
+  // Only call a pixel truly neutral gray if all RGB channels are very close.
+  if(chroma<=7){
+    if(blue>2.2)return"bleu-gris";
+    if(green>2.2)return"vert-gris";
+    return"gris";
   }
-  if(h>=175&&h<=260){
-    if(s<.22)return l>115?"bleu-gris clair":"bleu-gris";
-    if(h>205&&s>.30)return v>.58?"bleu":"bleu profond";
-    return v>.60?"bleu clair":"bleu-gris";
+
+  if(blue>=7){
+    return chroma<18?"bleu-gris":"bleu";
   }
-  if(h>=80&&h<175){
-    if(s<.18)return"gris-vert";
-    if(h<105&&s>.24)return"vert noisette";
-    return v>.56?"vert clair":"vert";
+
+  if(green>=6){
+    if(r-b>8 && g-b>8)return"vert-noisette";
+    return chroma<18?"vert-gris":"vert";
   }
-  if(h>=48&&h<80){
-    if(s>.30&&v>.48)return"vert noisette";
-    return"noisette clair";
+
+  if(warm>28 && g-b>12){
+    if(r-g<18)return"noisette";
+    return"ambre";
   }
-  if(h>=34&&h<48){
-    if(s>.38&&v>.48)return"ambre";
-    return"noisette doré";
+
+  if(r-b>18 && g-b>8){
+    return L>115?"noisette":"brun";
   }
-  if(h>=18&&h<34){
-    if(l>125&&s<.36)return"noisette clair";
-    if(l>95)return"brun noisette";
-    return"brun";
+
+  // Low-chroma colored pixels: infer tint from small channel differences
+  // instead of collapsing immediately to gray.
+  if(b-r>=4 || b-g>=4)return"bleu-gris";
+  if(g-r>=4 && g-b>=2)return"vert-gris";
+  if(r-b>=7 && g-b>=4)return"noisette";
+
+  return"gris";
+}
+
+function irisFrameVote(video,lm,gains){
+  const pixels=denseIrisPixels(video,lm,gains);
+  const votes={
+    "bleu":0,"bleu-gris":0,"vert":0,"vert-gris":0,
+    "vert-noisette":0,"noisette":0,"ambre":0,"brun":0,"gris":0
+  };
+  const kept=[];
+
+  for(const c of pixels){
+    const family=irisPixelFamily(c);
+    const chroma=Math.max(...c)-Math.min(...c);
+    const weight=1+Math.min(3,chroma/12);
+    votes[family]+=weight;
+    kept.push(c);
   }
-  if(l<60)return"brun très foncé";
-  return s<.20?"gris-brun":"brun";
+
+  // Prevent tiny specular/neutral regions from overpowering a real tint.
+  const coloredTotal=Object.entries(votes)
+    .filter(([k])=>k!=="gris")
+    .reduce((s,[,v])=>s+v,0);
+
+  if(coloredTotal>votes.gris*.55){
+    votes.gris*=0.35;
+  }
+
+  const sorted=Object.entries(votes).sort((a,b)=>b[1]-a[1]);
+  const family=sorted[0]?.[0]||"indéterminée";
+  const color=medianColor(kept.length?kept:[[128,128,128]]);
+
+  return{family,color,votes,count:kept.length};
+}
+
+function mergeIrisVotes(frames){
+  const totals={
+    "bleu":0,"bleu-gris":0,"vert":0,"vert-gris":0,
+    "vert-noisette":0,"noisette":0,"ambre":0,"brun":0,"gris":0
+  };
+  const colors=[];
+
+  for(const f of frames){
+    if(!f?.irisVote)continue;
+    for(const [k,v] of Object.entries(f.irisVote.votes||{})){
+      if(k in totals)totals[k]+=v;
+    }
+    if(f.irisVote.color)colors.push(f.irisVote.color);
+  }
+
+  // Merge adjacent semantic families before selecting the final label.
+  const groups=[
+    ["bleu", totals["bleu"]+totals["bleu-gris"]],
+    ["vert", totals["vert"]+totals["vert-gris"]+totals["vert-noisette"]*.55],
+    ["noisette", totals["noisette"]+totals["vert-noisette"]*.45],
+    ["ambre", totals["ambre"]],
+    ["brun", totals["brun"]],
+    ["gris", totals["gris"]]
+  ].sort((a,b)=>b[1]-a[1]);
+
+  const broad=groups[0]?.[0]||"indéterminée";
+  let name=broad;
+
+  if(broad==="bleu"){
+    name=totals["bleu-gris"]>totals["bleu"]*.65?"bleu-gris":"bleu";
+  }else if(broad==="vert"){
+    if(totals["vert-noisette"]>Math.max(totals["vert"],totals["vert-gris"])*.7)name="vert noisette";
+    else name=totals["vert-gris"]>totals["vert"]*.65?"vert-gris":"vert";
+  }else if(broad==="noisette"){
+    name="noisette";
+  }else if(broad==="ambre"){
+    name="ambre";
+  }else if(broad==="brun"){
+    name="brun";
+  }else if(broad==="gris"){
+    // "gris" is allowed only when neutral votes clearly dominate every tint.
+    const bestTint=Math.max(
+      totals["bleu"]+totals["bleu-gris"],
+      totals["vert"]+totals["vert-gris"],
+      totals["noisette"]+totals["vert-noisette"],
+      totals["ambre"],
+      totals["brun"]
+    );
+    if(totals["gris"]<bestTint*1.8){
+      const tintGroups=[
+        ["bleu-gris",totals["bleu"]+totals["bleu-gris"]],
+        ["vert-gris",totals["vert"]+totals["vert-gris"]],
+        ["noisette",totals["noisette"]+totals["vert-noisette"]],
+        ["ambre",totals["ambre"]],
+        ["brun",totals["brun"]]
+      ].sort((a,b)=>b[1]-a[1]);
+      name=tintGroups[0][0];
+    }else{
+      name="gris";
+    }
+  }
+
+  return{name,color:medianColor(colors.length?colors:[[128,128,128]])};
+}
+
+function irisName(rgb){
+  // Fallback only. Normal analysis uses mergeIrisVotes().
+  return irisPixelFamily(rgb).replace("vert-noisette","vert noisette");
 }
 function browName(rgb){
   const[h,s,v]=rgbToHsv(rgb),l=lum(rgb);
@@ -522,32 +646,16 @@ function sampleRawColors(video,lm){
 
   const lips=sampleCluster(video,lm,[13,14,61,291,78,308],2,gains);
   const brows=sampleCluster(video,lm,[70,63,105,107,300,293,334,336],2,gains);
+  const irisVote=irisFrameVote(video,lm,gains);
 
-  let irisSamples=trimColorSamples(irisRingSamples(video,lm,gains));
-  // If eye reflections made too many samples unusable, retry without saturation rejection.
-  if(irisSamples.length<5){
-    irisSamples=[];
-    for(const def of [{center:468,ring:[469,470,471,472]},{center:473,ring:[474,475,476,477]}]){
-      const center=P(lm,def.center);
-      if(!center)continue;
-      for(const id of def.ring){
-        const edge=P(lm,id);
-        if(!edge)continue;
-        const p=interpolatePoint(center,edge,.62);
-        const c=applyGain(getPixel(video,p.x,p.y,1),gains);
-        if(lum(c)>30&&lum(c)<225)irisSamples.push(c);
-      }
-    }
-  }
-  const iris=medianColor(irisSamples);
-
-  return{skin,lips,brows,iris};
+  return{skin,lips,brows,irisVote};
 }
 function combineColorFrames(frames){
   const skin=medianColor(frames.map(f=>f.skin));
   const lips=medianColor(frames.map(f=>f.lips));
   const brows=medianColor(frames.map(f=>f.brows));
-  const iris=medianColor(frames.map(f=>f.iris));
+  const irisMerged=mergeIrisVotes(frames);
+  const iris=irisMerged.color;
 
   const[h,s,v]=rgbToHsv(skin);
   let undertone="neutre";
@@ -562,7 +670,7 @@ function combineColorFrames(frames){
     skinHex:hex(skin),skinName:skinName(skin),
     lipHex:hex(lips),lipName:lipName(lips),
     browHex:hex(brows),browName:browName(brows),
-    irisHex:hex(iris),irisName:irisName(iris),
+    irisHex:hex(iris),irisName:irisMerged.name,
     undertone,contrast
   };
 }
@@ -675,7 +783,7 @@ function drawMood(canvas,video,lm,mood){
 if("serviceWorker" in navigator){
   window.addEventListener("load",async()=>{
   try{
-    const reg=await navigator.serviceWorker.register("./sw.js?v=12",{updateViaCache:"none"});
+    const reg=await navigator.serviceWorker.register("./sw.js?v=13",{updateViaCache:"none"});
     await reg.update();
   }catch(err){
     console.error(err);

@@ -1,9 +1,9 @@
-# Beauty Mirror V12 — Analyse précision
+# Beauty Mirror V13 — Iris renforcé
 
-- Flash supprimé.
-- Écran de préparation avant analyse : lumière naturelle ou blanche, pas de contre-jour.
-- Couleur des yeux : lecture de l’anneau de l’iris autour de la pupille, sur les deux yeux.
-- Correction de dominante colorée avec les zones claires des yeux quand elles sont exploitables.
-- 9 lectures successives combinées pour réduire les erreurs dues aux reflets, clignements et bruit caméra.
-- Couleurs sourcils, lèvres et peau également calculées sur plusieurs images.
-- Badge V12 visible pour confirmer que la bonne version est chargée.
+- Lecture dense de l’anneau de l’iris, pas de la pupille.
+- Deux yeux analysés.
+- 15 images successives.
+- Vote couleur pixel par pixel plutôt qu’une moyenne RGB qui grise les iris clairs.
+- Rejet des pixels trop sombres (pupille) et trop clairs (reflets/blanc de l’œil).
+- Gris retenu uniquement si la neutralité domine réellement.
+- Badge V13 visible.
