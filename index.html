@@ -1,169 +1,204 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#f7eef5">
-<link rel="manifest" href="manifest.json">
-<title>Beauty Mirror</title>
-<style>
-html,body{margin:0;min-height:100%;background:#f7eef5}
-body{padding:0}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#f5eef5">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Beauty Mirror">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icon-192.png">
+  <link rel="stylesheet" href="./styles.css">
+  <title>Beauty Mirror</title>
 </head>
 <body>
-<div id="beauty-demo" style="min-height:100%;background:linear-gradient(160deg,#f7eef5 0%,#eef1fb 52%,#f6f2ef 100%);padding:22px;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;color:#1f1f24;">
-  <style>
-    #beauty-demo *{box-sizing:border-box}
-    #beauty-demo .phone{max-width:430px;margin:0 auto;border-radius:36px;overflow:hidden;background:rgba(255,255,255,.58);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);box-shadow:0 24px 70px rgba(70,55,85,.18);border:1px solid rgba(255,255,255,.8)}
-    #beauty-demo .screen{padding:16px 14px 14px;min-height:680px;display:flex;flex-direction:column}
-    #beauty-demo .lock{justify-content:center;align-items:center;text-align:center}
-    #beauty-demo .lock h2{font-size:26px;margin:0 0 8px;font-weight:650}
-    #beauty-demo .sub{font-size:14px;color:#6b6872;margin-bottom:24px}
-    #beauty-demo .dots{display:flex;gap:12px;margin-bottom:26px}
-    #beauty-demo .dot{width:13px;height:13px;border-radius:50%;border:1.6px solid rgba(35,35,40,.38);background:transparent}
-    #beauty-demo .dot.on{background:#232329;border-color:#232329}
-    #beauty-demo .keypad{display:grid;grid-template-columns:repeat(3,76px);gap:13px}
-    #beauty-demo .key{width:76px;height:76px;border-radius:50%;border:1px solid rgba(255,255,255,.8);background:rgba(255,255,255,.55);font-size:25px;color:#232329;box-shadow:inset 0 1px rgba(255,255,255,.9);cursor:pointer}
-    #beauty-demo .key:active{transform:scale(.96)}
-    #beauty-demo .empty{visibility:hidden}
-    #beauty-demo .wrong{animation:shake .32s ease}
-    @keyframes shake{25%{transform:translateX(-8px)}50%{transform:translateX(8px)}75%{transform:translateX(-5px)}}
-    #beauty-demo .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-    #beauty-demo .brand{font-size:20px;font-weight:650}
-    #beauty-demo .pill{border:1px solid rgba(255,255,255,.8);background:rgba(255,255,255,.48);backdrop-filter:blur(18px);border-radius:999px;padding:9px 13px;font-size:12px;color:#55515b}
-    #beauty-demo .mirror{position:relative;border-radius:28px;overflow:hidden;background:linear-gradient(180deg,#e7d9dc,#d8c5c7 48%,#b58f8e 100%);height:430px}
-    #beauty-demo .face{position:absolute;left:50%;top:49%;transform:translate(-50%,-50%);width:225px;height:300px;border-radius:46% 46% 43% 43%/42% 42% 56% 56%;background:linear-gradient(145deg,#f2c9b7,#dca590);box-shadow:inset -16px -12px 30px rgba(100,55,45,.12)}
-    #beauty-demo .eye{position:absolute;top:119px;width:44px;height:18px;border-radius:50%;border-bottom:3px solid #5a423d}
-    #beauty-demo .eye.l{left:43px}.eye.r{right:43px}
-    #beauty-demo .brow{position:absolute;top:94px;width:50px;height:14px;border-top:5px solid #705147;border-radius:60%}
-    #beauty-demo .brow.l{left:38px;transform:rotate(-4deg)}.brow.r{right:38px;transform:rotate(4deg)}
-    #beauty-demo .nose{position:absolute;left:50%;top:145px;transform:translateX(-50%);width:28px;height:55px;border-radius:45%;border-right:2px solid rgba(120,75,65,.35);border-bottom:2px solid rgba(120,75,65,.22)}
-    #beauty-demo .mouth{position:absolute;left:50%;top:220px;transform:translateX(-50%);width:70px;height:26px;border-radius:50%;border-bottom:7px solid #a05f61}
-    #beauty-demo .zone{position:absolute;border:1.5px solid rgba(255,255,255,.75);border-radius:999px;background:rgba(255,255,255,.08);cursor:pointer}
-    #beauty-demo .z-brow{left:31px;right:31px;top:82px;height:42px}.z-eyes{left:28px;right:28px;top:115px;height:45px}.z-lips{left:67px;right:67px;top:205px;height:55px}.z-skin{left:22px;right:22px;top:42px;height:225px;border-radius:44%}
-    #beauty-demo .info{position:absolute;left:12px;right:12px;bottom:12px;background:rgba(250,250,252,.72);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.88);border-radius:20px;padding:12px 13px;box-shadow:0 10px 30px rgba(40,30,45,.12)}
-    #beauty-demo .info strong{display:block;margin-bottom:5px;font-size:15px}.info span{font-size:12px;color:#5f5b64;line-height:1.45}
-    #beauty-demo .tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:12px;background:rgba(255,255,255,.52);border:1px solid rgba(255,255,255,.8);border-radius:22px;padding:7px}
-    #beauty-demo .tab{border:0;background:transparent;border-radius:16px;padding:8px 3px;font-size:10px;color:#77727d;cursor:pointer;min-height:48px}.tab.active{background:rgba(255,255,255,.84);color:#242329;box-shadow:0 4px 12px rgba(45,35,50,.08)}
-    #beauty-demo .content{flex:1;overflow:auto;padding-bottom:4px}
-    #beauty-demo .title{font-size:28px;font-weight:670;margin:8px 0 4px}.lead{color:#68636e;font-size:14px;margin-bottom:18px}
-    #beauty-demo .card{background:rgba(255,255,255,.58);border:1px solid rgba(255,255,255,.85);border-radius:24px;padding:16px;margin-bottom:12px;box-shadow:0 8px 24px rgba(60,45,70,.06)}
-    #beauty-demo .card h3{margin:0 0 7px;font-size:16px}.card p{margin:0;color:#66616b;font-size:13px;line-height:1.5}
-    #beauty-demo .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.chip{border:1px solid rgba(255,255,255,.9);background:rgba(255,255,255,.55);border-radius:999px;padding:9px 12px;font-size:12px;cursor:pointer}.chip.on{background:#2d2b31;color:white}
-    #beauty-demo .palette{display:flex;gap:8px;margin-top:12px}.sw{width:34px;height:34px;border-radius:50%;border:2px solid rgba(255,255,255,.85)}
-    #beauty-demo .previewface{height:310px;border-radius:28px;background:linear-gradient(180deg,#eadcdf,#d3b7b7);position:relative;overflow:hidden;margin-bottom:12px}.previewface .face{transform:translate(-50%,-50%) scale(.82)}
-    #beauty-demo .small-btn{border:0;border-radius:18px;padding:12px 14px;background:rgba(255,255,255,.7);font-weight:600;cursor:pointer;width:100%}
-    #beauty-demo .moods{display:grid;grid-template-columns:1fr 1fr;gap:9px}.mood{border:1px solid rgba(255,255,255,.85);background:rgba(255,255,255,.54);border-radius:21px;padding:15px;font-size:13px;text-align:left;cursor:pointer}.mood.sel{background:#2c2b31;color:white}
-    #beauty-demo .hide{display:none!important}
-  </style>
-
-  <div class="phone">
-    <section id="lock" class="screen lock">
-      <div style="font-size:34px;margin-bottom:12px">✦</div>
-      <h2>Beauty Mirror</h2>
-      <div class="sub">Saisir le code</div>
-      <div id="dots" class="dots" aria-label="code"></div>
-      <div id="pad" class="keypad"></div>
-      <div id="lockMsg" style="height:20px;margin-top:15px;font-size:12px;color:#9b4d58"></div>
+  <main class="app-shell">
+    <section id="lockScreen" class="lock-screen">
+      <div class="lock-mark">✦</div>
+      <h1>Beauty Mirror</h1>
+      <p>Entre le code</p>
+      <div id="pinDots" class="pin-dots" aria-label="Code à 6 chiffres"></div>
+      <div id="keypad" class="keypad"></div>
+      <div id="pinError" class="pin-error" aria-live="polite"></div>
     </section>
 
-    <section id="app" class="screen hide">
-      <div class="top"><div class="brand" id="screenName">Miroir</div><div class="pill" id="liveStatus">Analyse live prête</div></div>
-
-      <div id="view-mirror" class="content">
-        <div class="mirror">
-          <div class="face">
-            <div class="brow l"></div><div class="brow r"></div><div class="eye l"></div><div class="eye r"></div><div class="nose"></div><div class="mouth"></div>
-            <button class="zone z-skin" data-zone="Peau" aria-label="Analyser la peau"></button>
-            <button class="zone z-brow" data-zone="Sourcils" aria-label="Analyser les sourcils"></button>
-            <button class="zone z-eyes" data-zone="Yeux" aria-label="Analyser les yeux"></button>
-            <button class="zone z-lips" data-zone="Lèvres" aria-label="Analyser les lèvres"></button>
-          </div>
-          <div class="info"><strong id="zoneTitle">Touchez une zone du visage</strong><span id="zoneText">Le Miroir décrit uniquement les caractéristiques visibles de votre visage. Il ne modifie rien.</span></div>
+    <section id="mainApp" class="main-app hidden">
+      <header class="topbar glass">
+        <div>
+          <div id="screenTitle" class="screen-title">Miroir</div>
+          <div id="cameraStatus" class="status-text">Caméra inactive</div>
         </div>
-      </div>
+        <button id="cameraButton" class="mini-button" type="button">Activer</button>
+      </header>
 
-      <div id="view-analysis" class="content hide">
-        <div class="title">Ton analyse ✨</div><div class="lead">Les résultats ci-dessous doivent venir du visage actuellement visible par la caméra.</div>
-        <div class="card"><h3>Analyse en direct</h3><p id="analysisLiveText">Aucune analyse n’est figée à l’avance. Dans l’app finale, les landmarks détectés sur la caméra alimentent en temps réel toutes les caractéristiques ci-dessous.</p><div class="chips"><button class="chip on" id="simulateLive">Simuler une nouvelle lecture live</button></div></div>
-        <div class="card"><h3>Morphologie globale</h3><p id="morphologyResult">En attente d’une lecture du visage.</p></div>
-        <div class="card"><h3>Front</h3><p id="foreheadResult">En attente d’une lecture du visage.</p></div>
-        <div class="card"><h3>Yeux</h3><p id="eyesResult">En attente d’une lecture du visage.</p></div>
-        <div class="card"><h3>Sourcils</h3><p id="browsResult">En attente d’une lecture du visage.</p></div>
-        <div class="card"><h3>Lèvres</h3><p id="lipsResult">En attente d’une lecture du visage.</p></div>
-        <div class="card"><h3>Mâchoire & menton</h3><p id="jawResult">En attente d’une lecture du visage.</p></div>
-        <div class="card"><h3>Colorimétrie</h3><p id="colorResult">En attente d’une lecture du visage et de la lumière actuelle.</p><div class="palette"><div class="sw" id="sw1" style="background:#d8a18a"></div><div class="sw" id="sw2" style="background:#b76e79"></div><div class="sw" id="sw3" style="background:#8f6f64"></div><div class="sw" id="sw4" style="background:#d2a15f"></div></div></div>
-        <div class="card"><h3>Sourcils recommandés</h3><p id="browAdvice">La recommandation apparaîtra après l’analyse live du visage.</p><div class="chips"><button class="chip on">Recommandé ✨</button><button class="chip">Droit doux</button><button class="chip">Soft Arch</button></div></div>
-      </div>
+      <section id="tab-mirror" class="tab-view active">
+        <div class="camera-card glass">
+          <div class="camera-stage">
+            <video id="mirrorVideo" autoplay playsinline muted></video>
+            <canvas id="mirrorCanvas"></canvas>
+            <div id="guideMessage" class="guide-message">Active la caméra pour commencer</div>
+          </div>
+        </div>
 
-      <div id="view-try" class="content hide">
-        <div class="title">Essayer 💄</div><div class="lead">Ici seulement, tu peux modifier le rendu du visage.</div>
-        <div class="previewface"><div class="face"><div class="brow l"></div><div class="brow r"></div><div class="eye l"></div><div class="eye r"></div><div class="nose"></div><div class="mouth"></div></div><div class="info"><strong>Caméra en direct</strong><span>Dans l’app réelle, les essais se posent sur le visage filmé en temps réel, pas sur une photo.</span></div></div>
-        <div class="chips" id="tryChips"><button class="chip on">Sourcils</button><button class="chip">Yeux</button><button class="chip">Blush</button><button class="chip">Bronzer</button><button class="chip">Lèvres</button><button class="chip">Teint</button></div>
-        <div class="card"><h3 id="tryTitle">Sourcils</h3><p id="tryText">Teste des formes réalistes tout en respectant la ligne naturelle détectée.</p></div>
-      </div>
+        <div class="zone-strip" id="zoneStrip">
+          <button type="button" data-zone="face" class="zone-chip active">Visage</button>
+          <button type="button" data-zone="forehead" class="zone-chip">Front</button>
+          <button type="button" data-zone="brows" class="zone-chip">Sourcils</button>
+          <button type="button" data-zone="eyes" class="zone-chip">Yeux</button>
+          <button type="button" data-zone="lips" class="zone-chip">Lèvres</button>
+          <button type="button" data-zone="jaw" class="zone-chip">Mâchoire</button>
+          <button type="button" data-zone="skin" class="zone-chip">Peau</button>
+        </div>
 
-      <div id="view-advice" class="content hide">
-        <div class="title">Aujourd'hui ✨</div><div class="lead">Choisis ton mood et l'app prépare une proposition adaptée à ton analyse.</div>
-        <div class="previewface"><div class="face"><div class="brow l"></div><div class="brow r"></div><div class="eye l"></div><div class="eye r"></div><div class="nose"></div><div class="mouth"></div></div><div class="info"><strong>Caméra en direct</strong><span>Le conseil du jour se construit à partir du visage visible ici, de la colorimétrie et du mood choisi.</span></div></div>
-        <div class="moods" id="moods"><button class="mood">🌸 Douce</button><button class="mood">✨ Confiante</button><button class="mood">🔥 Audacieuse</button><button class="mood">😌 Chill</button></div>
-        <div class="card" style="margin-top:12px"><h3 id="moodTitle">Ton look du jour</h3><p id="moodText">Sélectionne un mood pour générer une direction maquillage personnalisée.</p></div>
-        <button class="small-btn" id="applyMood">Essayer ce look ✨</button>
-      </div>
+        <article class="result-card glass">
+          <div class="eyebrow-label">En direct</div>
+          <h2 id="mirrorResultTitle">Visage</h2>
+          <p id="mirrorResult">L’analyse apparaîtra ici dès qu’un visage sera détecté.</p>
+        </article>
+      </section>
 
-      <div id="view-profile" class="content hide">
-        <div class="title">Mon profil</div><div class="lead">Tes données principales, sans historique ni looks enregistrés pour l'instant.</div>
-        <div class="card"><h3>✨ Mon analyse</h3><p>Dernière analyse du visage et possibilité de la relancer.</p></div>
-        <div class="card"><h3>🎨 Ma colorimétrie</h3><p>Palette personnelle, sous-ton estimé et contraste.</p></div>
-        <div class="card"><h3>⚙️ Confidentialité</h3><p>Gestion et suppression des données liées au visage.</p></div>
-      </div>
+      <section id="tab-analysis" class="tab-view">
+        <div class="hero-copy">
+          <h2>Ton analyse ✨</h2>
+          <p>Les résultats ci-dessous viennent du visage actuellement filmé.</p>
+        </div>
 
-      <nav class="tabs" aria-label="Navigation">
-        <button class="tab active" data-view="mirror">🪞<br>Miroir</button><button class="tab" data-view="analysis">◇<br>Analyse</button><button class="tab" data-view="try">💄<br>Essayer</button><button class="tab" data-view="advice">✨<br>Conseils</button><button class="tab" data-view="profile">👤<br>Profil</button>
+        <div class="analysis-grid">
+          <article class="analysis-card glass">
+            <span class="card-icon">◇</span>
+            <h3>Morphologie</h3>
+            <p id="aFace">En attente du visage…</p>
+          </article>
+          <article class="analysis-card glass">
+            <span class="card-icon">⌒</span>
+            <h3>Front</h3>
+            <p id="aForehead">En attente du visage…</p>
+          </article>
+          <article class="analysis-card glass">
+            <span class="card-icon">◉</span>
+            <h3>Yeux</h3>
+            <p id="aEyes">En attente du visage…</p>
+          </article>
+          <article class="analysis-card glass">
+            <span class="card-icon">⌁</span>
+            <h3>Sourcils</h3>
+            <p id="aBrows">En attente du visage…</p>
+          </article>
+          <article class="analysis-card glass">
+            <span class="card-icon">♡</span>
+            <h3>Lèvres</h3>
+            <p id="aLips">En attente du visage…</p>
+          </article>
+          <article class="analysis-card glass">
+            <span class="card-icon">⌄</span>
+            <h3>Mâchoire & menton</h3>
+            <p id="aJaw">En attente du visage…</p>
+          </article>
+        </div>
+
+        <article class="analysis-card color-card glass">
+          <span class="card-icon">✦</span>
+          <h3>Colorimétrie</h3>
+          <p id="aColor">En attente du visage…</p>
+          <div id="palette" class="palette"></div>
+        </article>
+
+        <article class="analysis-card glass">
+          <span class="card-icon">↗</span>
+          <h3>Sourcils conseillés</h3>
+          <p id="aBrowAdvice">En attente du visage…</p>
+        </article>
+      </section>
+
+      <section id="tab-try" class="tab-view">
+        <div class="hero-copy">
+          <h2>Essayer 💄</h2>
+          <p>Le rendu est posé directement sur ton visage et suit tes mouvements.</p>
+        </div>
+
+        <div class="camera-card glass">
+          <div class="camera-stage">
+            <video id="tryVideo" autoplay playsinline muted></video>
+            <canvas id="tryCanvas"></canvas>
+            <div id="tryHint" class="guide-message">Active la caméra</div>
+          </div>
+        </div>
+
+        <div class="try-controls glass">
+          <div class="try-tabs" id="tryTabs">
+            <button class="try-chip active" data-effect="brows" type="button">Sourcils</button>
+            <button class="try-chip" data-effect="eyes" type="button">Yeux</button>
+            <button class="try-chip" data-effect="blush" type="button">Blush</button>
+            <button class="try-chip" data-effect="bronzer" type="button">Bronzer</button>
+            <button class="try-chip" data-effect="lips" type="button">Lèvres</button>
+            <button class="try-chip" data-effect="complexion" type="button">Teint</button>
+          </div>
+          <div class="control-row">
+            <label for="effectIntensity">Intensité</label>
+            <input id="effectIntensity" type="range" min="0" max="100" value="55">
+          </div>
+          <div id="effectColors" class="effect-colors"></div>
+        </div>
+      </section>
+
+      <section id="tab-advice" class="tab-view">
+        <div class="hero-copy">
+          <h2>Aujourd’hui ✨</h2>
+          <p>Choisis ton mood. Le look est construit avec ton analyse actuelle.</p>
+        </div>
+
+        <div class="camera-card glass">
+          <div class="camera-stage">
+            <video id="adviceVideo" autoplay playsinline muted></video>
+            <canvas id="adviceCanvas"></canvas>
+            <div id="adviceHint" class="guide-message">Active la caméra</div>
+          </div>
+        </div>
+
+        <div id="moodGrid" class="mood-grid">
+          <button type="button" data-mood="soft" class="mood-card glass">🌸 <span>Douce</span></button>
+          <button type="button" data-mood="confident" class="mood-card glass">✨ <span>Confiante</span></button>
+          <button type="button" data-mood="bold" class="mood-card glass">🔥 <span>Audacieuse</span></button>
+          <button type="button" data-mood="chill" class="mood-card glass">😌 <span>Chill</span></button>
+        </div>
+
+        <article class="result-card glass">
+          <div class="eyebrow-label">Look du jour</div>
+          <h2 id="moodTitle">Choisis ton mood</h2>
+          <p id="moodDescription">Le maquillage apparaîtra en direct sur la caméra.</p>
+        </article>
+      </section>
+
+      <section id="tab-profile" class="tab-view">
+        <div class="hero-copy">
+          <h2>Mon profil</h2>
+          <p>Pour cette première version, uniquement l’essentiel.</p>
+        </div>
+        <article class="profile-card glass">
+          <h3>✨ Mon analyse</h3>
+          <p id="profileAnalysis">Aucune analyse active.</p>
+        </article>
+        <article class="profile-card glass">
+          <h3>🎨 Ma colorimétrie</h3>
+          <p id="profileColor">Aucune colorimétrie active.</p>
+        </article>
+        <article class="profile-card glass">
+          <h3>⚙️ Confidentialité</h3>
+          <p>Le flux caméra est analysé localement dans ton navigateur. Cette version n’enregistre ni photo ni vidéo.</p>
+        </article>
+      </section>
+
+      <nav class="bottom-nav glass" aria-label="Navigation principale">
+        <button class="nav-button active" data-tab="mirror" type="button"><span>🪞</span>Miroir</button>
+        <button class="nav-button" data-tab="analysis" type="button"><span>◇</span>Analyse</button>
+        <button class="nav-button" data-tab="try" type="button"><span>💄</span>Essayer</button>
+        <button class="nav-button" data-tab="advice" type="button"><span>✨</span>Conseils</button>
+        <button class="nav-button" data-tab="profile" type="button"><span>👤</span>Profil</button>
       </nav>
     </section>
-  </div>
+  </main>
 
-  <script>
-    const root=document.getElementById('beauty-demo');
-    const lock=root.querySelector('#lock'),app=root.querySelector('#app'),dots=root.querySelector('#dots'),pad=root.querySelector('#pad'),msg=root.querySelector('#lockMsg');
-    let code='';
-    function drawDots(){dots.innerHTML='';for(let i=0;i<6;i++){const d=document.createElement('span');d.className='dot'+(i<code.length?' on':'');dots.appendChild(d)}}
-    function press(v){if(v==='del'){code=code.slice(0,-1);msg.textContent='';drawDots();return} if(code.length>=6)return; code+=v;drawDots(); if(code.length===6){setTimeout(()=>{if(code==='071079'){lock.classList.add('hide');app.classList.remove('hide')}else{dots.classList.add('wrong');msg.textContent='Code incorrect';setTimeout(()=>dots.classList.remove('wrong'),350);code='';drawDots()}},120)}}
-    ['1','2','3','4','5','6','7','8','9','', '0','del'].forEach(v=>{const b=document.createElement('button');b.type='button';b.className='key'+(v===''?' empty':'');b.textContent=v==='del'?'⌫':v;b.disabled=v==='';if(v!=='')b.addEventListener('click',()=>press(v));pad.appendChild(b)});drawDots();
-    const names={mirror:'Miroir',analysis:'Analyse',try:'Essayer',advice:'Conseils',profile:'Profil'};
-    function runLiveAnalysis(){
-      const samples=[
-        {m:'Visage ovale · bas du visage légèrement affiné · équilibre général doux.',f:'Front : hauteur moyenne · proportion équilibrée.',e:'Forme : amande · inclinaison légèrement ascendante · avec cette lumière, iris brun-noisette.',b:'Épaisseur : moyenne · forme légèrement arquée · avec cette lumière, teinte brun moyen.',l:'Forme : arc de Cupidon doux · largeur moyenne · volume moyen avec lèvre inférieure plus pleine · teinte détectée rose naturel.',j:'Mâchoire : largeur moyenne · menton arrondi.',c:'Carnation : medium · sous-ton neutre-chaud · contraste moyen. Les tons cohérents avec cette lecture sont bois de rose, brun doux, terracotta léger et doré.',a:'Une ligne naturelle légèrement arquée est la plus cohérente avec cette lecture du visage.'},
-        {m:'Visage légèrement allongé · lignes douces · bas du visage fin.',f:'Front : plutôt haut · proportion légèrement dominante.',e:'Forme : amande ouverte · inclinaison neutre · avec cette lumière, iris brun profond.',b:'Épaisseur : moyenne à fournie · forme plutôt droite avec courbe douce · avec cette lumière, teinte brun foncé.',l:'Forme : lèvres équilibrées · largeur plutôt large · volume moyen et homogène · teinte détectée rose-brun.',j:'Mâchoire : plutôt fine · menton légèrement pointu.',c:'Carnation : medium à profonde · sous-ton neutre · contraste marqué. Les tons cohérents avec cette lecture sont prune doux, brun cacao, vieux rose et cuivre.',a:'Une forme plus droite avec une légère élévation en fin de sourcil équilibre mieux cette lecture.'},
-        {m:'Visage rond-ovale · joues présentes · lignes générales très douces.',f:'Front : hauteur moyenne à courte · proportion compacte.',e:'Forme : arrondie-amande · inclinaison légèrement descendante · avec cette lumière, iris brun clair.',b:'Épaisseur : fine à moyenne · forme douce · avec cette lumière, teinte brun clair.',l:'Forme : bouche arrondie · largeur moyenne · volume plutôt plein · teinte détectée rose chaud.',j:'Mâchoire : large et douce · menton arrondi.',c:'Carnation : claire à medium · sous-ton chaud · contraste doux. Les tons cohérents avec cette lecture sont pêche, corail doux, caramel clair et champagne.',a:'Un soft arch discret apporte un peu de structure sans durcir le visage.'}
-      ];
-      const r=samples[Math.floor(Math.random()*samples.length)];
-      root.querySelector('#morphologyResult').textContent=r.m;
-      root.querySelector('#foreheadResult').textContent=r.f;
-      root.querySelector('#eyesResult').textContent=r.e;
-      root.querySelector('#browsResult').textContent=r.b;
-      root.querySelector('#lipsResult').textContent=r.l;
-      root.querySelector('#jawResult').textContent=r.j;
-      root.querySelector('#colorResult').textContent=r.c;
-      root.querySelector('#browAdvice').textContent=r.a;
-      root.querySelector('#analysisLiveText').textContent='Lecture live actualisée à partir du visage actuellement cadré. Dans la vraie app, cette mise à jour vient directement des landmarks et des couleurs mesurées sur la caméra.';
-      root.querySelector('#liveStatus').textContent='Analyse live active ✓';
-    }
-    root.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{root.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');const v=t.dataset.view;root.querySelector('#screenName').textContent=names[v];root.querySelectorAll('[id^="view-"]').forEach(x=>x.classList.add('hide'));root.querySelector('#view-'+v).classList.remove('hide');if(v==='analysis')runLiveAnalysis()}));
-    root.querySelector('#simulateLive').addEventListener('click',runLiveAnalysis);
-    const info={Peau:['Peau','Carnation : medium · sous-ton : neutre-chaud · contraste : moyen.'],Sourcils:['Sourcils','Épaisseur : moyenne · forme : légèrement arquée · avec cette lumière, teinte : brun moyen.'],Yeux:['Yeux','Forme : amande · inclinaison : légèrement ascendante · avec cette lumière, iris : brun-noisette.'],Lèvres:['Lèvres','Forme : arc de Cupidon doux · largeur : moyenne · volume : moyen, lèvre inférieure plus pleine · teinte détectée : rose naturel.']};
-    root.querySelectorAll('.zone').forEach(z=>z.addEventListener('click',()=>{const d=info[z.dataset.zone];root.querySelector('#zoneTitle').textContent=d[0];root.querySelector('#zoneText').textContent=d[1]}));
-    root.querySelectorAll('#tryChips .chip').forEach(c=>c.addEventListener('click',()=>{root.querySelectorAll('#tryChips .chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');root.querySelector('#tryTitle').textContent=c.textContent;root.querySelector('#tryText').textContent='Aperçu naturel et réaliste de '+c.textContent.toLowerCase()+' adapté à l’analyse du visage.'}));
-    let mood='';root.querySelectorAll('.mood').forEach(m=>m.addEventListener('click',()=>{root.querySelectorAll('.mood').forEach(x=>x.classList.remove('sel'));m.classList.add('sel');mood=m.textContent.trim();root.querySelector('#moodTitle').textContent=mood+' — look proposé';root.querySelector('#moodText').textContent='Palette et intensité adaptées à la colorimétrie, aux yeux et à la morphologie détectée.'}));
-    root.querySelector('#applyMood').addEventListener('click',()=>{if(!mood){root.querySelector('#moodText').textContent='Choisis d’abord un mood.';return} const t=[...root.querySelectorAll('.tab')].find(x=>x.dataset.view==='try');t.click()});
-  </script>
-</div>
-<script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
-}
-</script>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>
