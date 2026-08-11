@@ -349,3 +349,74 @@ button{touch-action:manipulation}
   z-index:8;
   -webkit-overflow-scrolling:touch;
 }
+
+
+html,body{overflow-x:hidden}
+.main-app,.tab-view,.hero-copy,.analysis-card{max-width:100%;overflow-x:hidden}
+.local-carousel{
+  display:flex;
+  gap:9px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  width:100%;
+  max-width:100%;
+  margin-top:12px;
+  padding:2px 2px 8px;
+  scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-x:contain;
+  touch-action:pan-x;
+}
+.local-carousel::-webkit-scrollbar{display:none}
+.analysis-chip{
+  flex:0 0 auto;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,.62);
+  border-radius:999px;
+  padding:10px 13px;
+  color:var(--text);
+  white-space:nowrap;
+}
+.analysis-chip.active{background:#2b2930;color:#fff;border-color:#2b2930}
+.analysis-kicker{
+  margin-top:5px;
+  color:var(--muted);
+  font-size:10px;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.10em;
+}
+.advice-box{
+  margin-top:10px;
+  padding:11px 12px;
+  border-radius:17px;
+  background:rgba(255,255,255,.48);
+  border:1px solid rgba(255,255,255,.76);
+  color:#5f5b66;
+  font-size:12px;
+  line-height:1.48;
+}
+.makeup-carousel{align-items:stretch}
+.makeup-style-card{
+  flex:0 0 188px;
+  min-width:0;
+  border-radius:20px;
+  padding:14px;
+  background:rgba(255,255,255,.58);
+  border:1px solid rgba(255,255,255,.88);
+  box-shadow:0 7px 20px rgba(50,38,56,.06);
+}
+.makeup-style-card strong{display:block;font-size:14px;margin-bottom:6px}
+.makeup-style-card span{display:block;color:#68636e;font-size:12px;line-height:1.42}
+.makeup-style-card em{
+  display:inline-flex;
+  margin-top:10px;
+  border-radius:999px;
+  padding:6px 9px;
+  background:#2b2930;
+  color:#fff;
+  font-style:normal;
+  font-size:10px;
+  font-weight:750;
+}
+.analysis-second-line{margin-top:8px!important}

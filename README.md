@@ -1,9 +1,12 @@
-# Beauty Mirror V16 — zones Miroir
+# Beauty Mirror V17 — Analyse
 
-Correction V15 :
-- les boutons Visage / Front / Sourcils / Yeux / Lèvres / Mâchoire / Peau répondent de nouveau ;
-- sélection visuelle active corrigée ;
-- comportement tactile renforcé sur iPhone ;
-- les résultats de l’analyse enregistrée s’affichent quand on change de zone.
+Le Miroir V16 n’a pas été modifié.
 
-Badge V16 visible.
+Nouvel onglet Analyse :
+- recommandations personnalisées par morphologie ;
+- conseils yeux, sourcils, lèvres et colorimétrie ;
+- sélection et classement de styles makeup ;
+- carrousels horizontaux locaux uniquement ;
+- la page complète ne se déplace jamais horizontalement.
+
+Badge V17 visible.

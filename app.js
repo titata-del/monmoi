@@ -820,10 +820,65 @@ function updateAll(a){
   $("#aJaw").textContent=`Mâchoire ${a.jaw}. Menton ${a.chin}.`;
   $("#aColor").innerHTML=`Peau ${colorPill(a.skinName,a.skinHex)} · sous-ton ${a.undertone} · contraste ${a.contrast}.`;
   $("#aBrowAdvice").textContent=browAdvice(a.faceShape);
+  $("#faceAdvice").textContent=faceAdvice(a);
+  $("#eyeAdvice").textContent=eyeAdvice(a);
+  $("#lipAdvice").textContent=lipAdvice(a);
+  $("#colorAdvice").textContent=colorAdvice(a);
+  $("#structureAdvice").textContent=structureAdvice(a);
+  updateMakeupStyleRanking(a);
   $("#profileAnalysis").textContent=`Visage ${a.faceShape} · yeux ${a.eyeShape} · mâchoire ${a.jaw}.`;
   $("#profileColor").innerHTML=`Peau ${colorPill(a.skinName,a.skinHex)} · sous-ton ${a.undertone} · contraste ${a.contrast}.`;
   $("#palette").innerHTML=recommendPalette(a).map(c=>`<span class="palette-swatch" style="background:${c}"></span>`).join("");
   renderMirrorZone();
+}
+function faceAdvice(a){
+  if(a.faceShape==="rond") return "Privilégie des placements légèrement remontants : blush étiré vers les tempes et bronzer discret sur les côtés pour structurer sans durcir.";
+  if(a.faceShape==="allongé") return "Les placements plus horizontaux fonctionnent bien : blush moins haut et bronzer léger sur le haut du front et le bas du menton pour rééquilibrer la longueur.";
+  if(a.faceShape==="carré") return "Les placements souples et diffus peuvent adoucir les angles : blush arrondi et bronzer estompé autour des tempes et de la mâchoire.";
+  if(a.faceShape==="cœur") return "Un blush centré puis légèrement étiré et un bronzer doux sur les tempes peuvent équilibrer le haut du visage et le menton.";
+  return "Ta morphologie est équilibrée : tu peux garder des placements naturels et jouer davantage sur le style recherché que sur une correction forte.";
+}
+function eyeAdvice(a){
+  const tilt=a.eyeTilt||"";
+  if(tilt.includes("relev")) return "Ton regard accepte très bien les styles étirés : liner fin, siren eyes doux, fards tirés vers l’extérieur et coin externe légèrement intensifié.";
+  if(tilt.includes("descend")) return "Un placement remontant fonctionne bien : liner qui se relève avant le coin externe, fard plus haut sur l’extérieur et lumière au centre de la paupière.";
+  if(a.eyeShape==="rond") return "Pour allonger le regard : liner fin du milieu vers l’extérieur, fard étiré et intensité concentrée sur le coin externe.";
+  return "Ton regard est polyvalent : soft glam, halo eye léger, liner fin ou smoky diffus peuvent fonctionner selon l’intensité souhaitée.";
+}
+function lipAdvice(a){
+  if(a.lipVolume==="plein") return "Les textures satinées ou glossy mettent naturellement le volume en valeur. Un contour très léger suffit pour garder un résultat naturel.";
+  if(a.lipVolume==="fin") return "Un crayon très proche de la teinte naturelle, légèrement fondu vers l’intérieur, puis une texture satinée peut donner plus de relief sans effet artificiel.";
+  if(a.lipWidth==="large") return "Les teintes monochromes et les dégradés doux fonctionnent bien. Le contour peut rester discret pour conserver l’équilibre naturel.";
+  return "Un contour doux et une texture satinée ou brillante peuvent souligner la forme sans la modifier fortement.";
+}
+function colorAdvice(a){
+  if(a.undertone==="chaud") return "Privilégie les familles pêche, terracotta doux, caramel, bronze chaud, brun doré et nude chaud. Évite surtout les tons très froids s’ils grisent le teint.";
+  if(a.undertone==="froid") return "Les roses froids, bois de rose, mauves, prunes douces et bruns froids devraient mieux respecter ta colorimétrie.";
+  if(a.undertone==="olive") return "Les tons terre, bronze neutre, rose brun, pêche sourd et kaki doux sont souvent particulièrement harmonieux sur un sous-ton olive.";
+  return "Les tons neutres sont une bonne base : rose naturel, brun doux, beige rosé et bronze neutre. Tu peux ensuite aller plus chaud ou plus froid selon le look.";
+}
+function structureAdvice(a){
+  return `Front ${a.forehead}, mâchoire ${a.jaw}, menton ${a.chinShape}. Ces éléments servent surtout à déterminer où placer le blush et le bronzer, sans chercher à masquer ta morphologie.`;
+}
+function updateMakeupStyleRanking(a){
+  const cards=[...document.querySelectorAll("#makeupStyles .makeup-style-card")];
+  const score={};
+  score["Soft Glam"]=8;
+  score["No-Makeup Makeup"]=8;
+  score["Clean Girl"]=7;
+  score["Bronzy"]=a.undertone==="chaud"||a.undertone==="olive"?9:6;
+  score["Latte Makeup"]=a.undertone==="chaud"||a.undertone==="olive"?9:5;
+  score["Cold Girl"]=a.undertone==="froid"?9:5;
+  score["Siren Eyes"]=a.eyeTilt?.includes("relev")||a.eyeShape?.includes("amande")?9:6;
+  score["Douyin Soft"]=a.contrastLabel==="doux"||a.eyeShape==="rond"?8:6;
+  cards.forEach(card=>{
+    const name=card.querySelector("strong")?.textContent||"";
+    const badge=card.querySelector("em");
+    const s=score[name]||6;
+    badge.textContent=s>=9?"Top pour toi ✨":s>=8?"Très compatible":s>=7?"Compatible":"À essayer";
+    card.dataset.score=s;
+  });
+  cards.sort((a,b)=>(Number(b.dataset.score)||0)-(Number(a.dataset.score)||0)).forEach(card=>document.querySelector("#makeupStyles").appendChild(card));
 }
 function browAdvice(shape){
   return ({rond:"Soft arch : arc doux pour structurer le visage.",allongé:"Droit doux : ligne moins arquée pour équilibrer la longueur.",carré:"Arc doux : courbe souple pour adoucir la structure.",cœur:"Arc léger : montée progressive pour équilibrer le front et le menton.",ovale:"Arc naturel : ligne douce qui respecte l’équilibre général."})[shape]||"Arc naturel.";
@@ -917,7 +972,7 @@ function drawMood(canvas,video,lm,mood){
 if("serviceWorker" in navigator){
   window.addEventListener("load",async()=>{
   try{
-    const reg=await navigator.serviceWorker.register("./sw.js?v=16",{updateViaCache:"none"});
+    const reg=await navigator.serviceWorker.register("./sw.js?v=17",{updateViaCache:"none"});
     await reg.update();
   }catch(err){
     console.error(err);

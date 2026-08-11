@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="Beauty Mirror">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=16">
+  <link rel="stylesheet" href="./styles.css?v=17">
   <title>Beauty Mirror</title>
 </head>
 <body>
@@ -54,7 +54,7 @@
 
       <header id="appHeader" class="topbar glass hidden">
         <div>
-          <div class="title-row"><div id="screenTitle" class="screen-title">Miroir</div><span class="version-badge">V16</span></div>
+          <div class="title-row"><div id="screenTitle" class="screen-title">Miroir</div><span class="version-badge">V17</span></div>
           <div id="cameraStatus" class="status-text">Analyse requise</div>
         </div>
         <button id="cameraButton" class="mini-button" type="button">Refaire l’analyse</button>
@@ -89,53 +89,81 @@
       <section id="tab-analysis" class="tab-view">
         <div class="hero-copy">
           <h2>Ton analyse ✨</h2>
-          <p>Résultats enregistrés pendant l’analyse initiale.</p>
+          <p>Ce qui peut te mettre en valeur, à partir de ton analyse enregistrée.</p>
         </div>
 
-        <div class="analysis-grid">
-          <article class="analysis-card glass">
-            <span class="card-icon">◇</span>
-            <h3>Morphologie</h3>
-            <p id="aFace">Active la caméra pour lancer l’analyse en direct.</p>
-          </article>
-          <article class="analysis-card glass">
-            <span class="card-icon">⌒</span>
-            <h3>Front</h3>
-            <p id="aForehead">Active la caméra pour lancer l’analyse en direct.</p>
-          </article>
-          <article class="analysis-card glass">
-            <span class="card-icon">◉</span>
-            <h3>Yeux</h3>
-            <p id="aEyes">Active la caméra pour lancer l’analyse en direct.</p>
-          </article>
-          <article class="analysis-card glass">
-            <span class="card-icon">⌁</span>
-            <h3>Sourcils</h3>
-            <p id="aBrows">Active la caméra pour lancer l’analyse en direct.</p>
-          </article>
-          <article class="analysis-card glass">
-            <span class="card-icon">♡</span>
-            <h3>Lèvres</h3>
-            <p id="aLips">Active la caméra pour lancer l’analyse en direct.</p>
-          </article>
-          <article class="analysis-card glass">
-            <span class="card-icon">⌄</span>
-            <h3>Mâchoire & menton</h3>
-            <p id="aJaw">Active la caméra pour lancer l’analyse en direct.</p>
-          </article>
-        </div>
-
-        <article class="analysis-card color-card glass">
-          <span class="card-icon">✦</span>
-          <h3>Colorimétrie</h3>
-          <p id="aColor">Active la caméra pour lancer l’analyse en direct.</p>
-          <div id="palette" class="palette"></div>
+        <article class="analysis-card glass">
+          <span class="card-icon">◇</span>
+          <div class="analysis-kicker">Équilibre général</div>
+          <h3>Morphologie</h3>
+          <p id="aFace">Analyse requise.</p>
+          <div id="faceAdvice" class="advice-box">Les placements conseillés apparaîtront après l’analyse.</div>
         </article>
 
         <article class="analysis-card glass">
-          <span class="card-icon">↗</span>
-          <h3>Sourcils conseillés</h3>
-          <p id="aBrowAdvice">Active la caméra pour lancer l’analyse en direct.</p>
+          <span class="card-icon">◉</span>
+          <div class="analysis-kicker">Regard</div>
+          <h3>Yeux</h3>
+          <p id="aEyes">Analyse requise.</p>
+          <div id="eyeAdvice" class="advice-box">L’app proposera les styles d’eyeliner, de fards et d’intensité les plus adaptés à ton regard.</div>
+        </article>
+
+        <article class="analysis-card glass">
+          <span class="card-icon">⌁</span>
+          <div class="analysis-kicker">Structure</div>
+          <h3>Sourcils</h3>
+          <p id="aBrows">Analyse requise.</p>
+          <div id="aBrowAdvice" class="advice-box">La forme recommandée apparaîtra après l’analyse.</div>
+          <div class="local-carousel" aria-label="Formes de sourcils">
+            <button class="analysis-chip active" type="button">Recommandé ✨</button>
+            <button class="analysis-chip" type="button">Droit doux</button>
+            <button class="analysis-chip" type="button">Soft Arch</button>
+            <button class="analysis-chip" type="button">Arc naturel</button>
+            <button class="analysis-chip" type="button">Lift léger</button>
+          </div>
+        </article>
+
+        <article class="analysis-card glass">
+          <span class="card-icon">♡</span>
+          <div class="analysis-kicker">Lèvres</div>
+          <h3>Forme & mise en valeur</h3>
+          <p id="aLips">Analyse requise.</p>
+          <div id="lipAdvice" class="advice-box">Contours, textures et familles de teintes seront adaptés à ta morphologie.</div>
+        </article>
+
+        <article class="analysis-card color-card glass">
+          <span class="card-icon">✦</span>
+          <div class="analysis-kicker">Teint</div>
+          <h3>Colorimétrie</h3>
+          <p id="aColor">Analyse requise.</p>
+          <div id="palette" class="palette"></div>
+          <div id="colorAdvice" class="advice-box">Blush, bronzer, lèvres et yeux seront proposés dans des familles cohérentes avec ta colorimétrie.</div>
+        </article>
+
+        <article class="analysis-card glass">
+          <span class="card-icon">✧</span>
+          <div class="analysis-kicker">Sélection personnalisée</div>
+          <h3>Styles de makeup faits pour toi</h3>
+          <p>Parmi une grande bibliothèque de styles, l’app sélectionne ceux qui correspondent le mieux à ton visage.</p>
+          <div class="local-carousel makeup-carousel" id="makeupStyles">
+            <article class="makeup-style-card"><strong>Soft Glam</strong><span>Dégradés doux, peau lumineuse et structure équilibrée.</span><em>Très compatible</em></article>
+            <article class="makeup-style-card"><strong>Latte Makeup</strong><span>Tons chauds diffus et rendu monochrome élégant.</span><em>À confirmer</em></article>
+            <article class="makeup-style-card"><strong>Clean Girl</strong><span>Teint léger, sourcils propres et couleurs naturelles.</span><em>À confirmer</em></article>
+            <article class="makeup-style-card"><strong>Siren Eyes</strong><span>Regard étiré et accentuation de l’axe des yeux.</span><em>À confirmer</em></article>
+            <article class="makeup-style-card"><strong>Douyin Soft</strong><span>Lumière centrale, blush délicat et regard détaillé.</span><em>À confirmer</em></article>
+            <article class="makeup-style-card"><strong>Bronzy</strong><span>Chaleur du teint et relief doux avec bronzer.</span><em>À confirmer</em></article>
+            <article class="makeup-style-card"><strong>Cold Girl</strong><span>Blush frais et contraste rosé plus marqué.</span><em>À confirmer</em></article>
+            <article class="makeup-style-card"><strong>No-Makeup Makeup</strong><span>Correction minimale et mise en valeur très naturelle.</span><em>Très compatible</em></article>
+          </div>
+        </article>
+
+        <article class="analysis-card glass">
+          <span class="card-icon">⌄</span>
+          <div class="analysis-kicker">Structure du visage</div>
+          <h3>Front · Mâchoire · Menton</h3>
+          <p id="aForehead">Analyse requise.</p>
+          <p id="aJaw" class="analysis-second-line">Analyse requise.</p>
+          <div id="structureAdvice" class="advice-box">Ces informations servent surtout à ajuster le placement du blush, du bronzer et l’équilibre général.</div>
         </article>
       </section>
 
@@ -227,6 +255,6 @@
     </section>
   </main>
 
-  <script type="module" src="./app.js?v=16"></script>
+  <script type="module" src="./app.js?v=17"></script>
 </body>
 </html>
