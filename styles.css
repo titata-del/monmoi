@@ -317,3 +317,20 @@ button{touch-action:manipulation}
   font-size:11px;
   font-weight:800;
 }
+
+
+.mirror-recovery{
+  position:absolute;
+  left:14px;
+  right:14px;
+  bottom:14px;
+  z-index:6;
+  padding:12px 14px;
+  border-radius:18px;
+  background:rgba(25,24,29,.72);
+  color:#fff;
+  text-align:center;
+  font-size:12px;
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+}

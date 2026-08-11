@@ -87,6 +87,10 @@ async function stopCameraAndModel(){
     cancelAnimationFrame(raf);
     raf=null;
   }
+  if(appLoopFrame){
+    cancelAnimationFrame(appLoopFrame);
+    appLoopFrame=0;
+  }
   for(const v of videos()){
     try{
       v.pause();
@@ -105,6 +109,8 @@ async function stopCameraAndModel(){
 }
 
 async function restartAnalysis(){
+  liveRunning=false;
+  await detachSecondaryVideos();
   $("#appHeader").classList.add("hidden");
   $("#bottomNav").classList.add("hidden");
   $$(".tab-view").forEach(v=>v.classList.remove("active"));
@@ -222,11 +228,58 @@ function analyzeLoop(loopId){
 }
 
 
-function switchTab(tab){
+let activeAppTab="mirror";
+let appLoopFrame=0;
+let lastAppDetectAt=0;
+
+function currentVideoForTab(tab){
+  if(tab==="mirror") return $("#mirrorVideo");
+  if(tab==="try") return $("#tryVideo");
+  if(tab==="advice") return $("#adviceVideo");
+  return null;
+}
+
+async function detachSecondaryVideos(){
+  for(const v of [$("#mirrorVideo"),$("#tryVideo"),$("#adviceVideo")]){
+    if(!v) continue;
+    try{
+      v.pause();
+      v.srcObject=null;
+    }catch(e){}
+  }
+}
+
+async function attachOnlyVideo(tab){
+  await detachSecondaryVideos();
+  const v=currentVideoForTab(tab);
+  if(!v || !stream) return null;
+  try{
+    v.srcObject=stream;
+    await v.play();
+    return v;
+  }catch(err){
+    console.warn("Impossible d’ouvrir la caméra sur",tab,err);
+    return null;
+  }
+}
+
+async function switchTab(tab){
   const titles={mirror:"Miroir",analysis:"Analyse",try:"Essayer",advice:"Conseils",profile:"Profil"};
+  activeAppTab=tab;
+
   $$(".nav-button").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
   $$(".tab-view").forEach(v=>v.classList.toggle("active",v.id===`tab-${tab}`));
   $("#screenTitle").textContent=titles[tab]||"Miroir";
+
+  if(tab==="mirror" || tab==="try" || tab==="advice"){
+    const v=await attachOnlyVideo(tab);
+    if(tab==="mirror"){
+      $("#mirrorRecovery").classList.toggle("hidden",Boolean(v));
+      $("#guideMessage").textContent=v?"Analyse enregistrée":"Caméra indisponible";
+    }
+  }else{
+    await detachSecondaryVideos();
+  }
 }
 
 $$(".nav-button").forEach(btn=>{
@@ -235,48 +288,44 @@ $$(".nav-button").forEach(btn=>{
 
 async function startLiveViews(){
   liveRunning=true;
-  const targets=[$("#mirrorVideo"),$("#tryVideo"),$("#adviceVideo")];
-  for(const v of targets){
-    if(!v) continue;
-    try{
-      v.srcObject=stream;
-      await v.play();
-    }catch(err){
-      console.warn("Lecture vidéo secondaire impossible",err);
-    }
-  }
-  requestAnimationFrame(liveLoop);
+  activeAppTab="mirror";
+  await switchTab("mirror");
+  appLoopFrame=requestAnimationFrame(liveLoop);
 }
 
-function liveLoop(){
+function liveLoop(now=0){
   if(!liveRunning||!stream||!landmarker)return;
 
-  const v=$("#mirrorVideo");
-  if(v && v.readyState>=2){
+  const tab=activeAppTab;
+  const v=currentVideoForTab(tab);
+
+  // iPhone/Safari stability: never run MediaPipe on hidden/paused videos,
+  // and throttle tracking to ~10 fps instead of every animation frame.
+  if(v && v.readyState>=2 && !v.paused && now-lastAppDetectAt>=100){
+    lastAppDetectAt=now;
     try{
       const res=landmarker.detectForVideo(v,performance.now());
       if(res.faceLandmarks?.length){
         latestLandmarks=res.faceLandmarks[0];
-        drawGuide($("#mirrorCanvas"),v,latestLandmarks);
 
-        const tryVideo=$("#tryVideo");
-        const adviceVideo=$("#adviceVideo");
-
-        if(tryVideo?.readyState>=2){
-          drawMakeup($("#tryCanvas"),tryVideo,latestLandmarks,activeEffect,activeColor,effectIntensity);
+        if(tab==="mirror"){
+          drawGuide($("#mirrorCanvas"),v,latestLandmarks);
+          $("#mirrorRecovery").classList.add("hidden");
+        }else if(tab==="try"){
+          drawMakeup($("#tryCanvas"),v,latestLandmarks,activeEffect,activeColor,effectIntensity);
+        }else if(tab==="advice"){
+          drawMood($("#adviceCanvas"),v,latestLandmarks,activeMood);
         }
-        if(adviceVideo?.readyState>=2){
-          drawMood($("#adviceCanvas"),adviceVideo,latestLandmarks,activeMood);
-        }
-      }else{
-        clearCanvas($("#mirrorCanvas"));
       }
     }catch(err){
-      console.warn("Boucle caméra secondaire",err);
+      console.warn("Suivi facial temporairement interrompu",err);
+      if(tab==="mirror"){
+        $("#mirrorRecovery").classList.remove("hidden");
+      }
     }
   }
 
-  if(liveRunning) requestAnimationFrame(liveLoop);
+  appLoopFrame=requestAnimationFrame(liveLoop);
 }
 
 async function captureAnalysis(){
@@ -327,19 +376,27 @@ async function captureAnalysis(){
 
   await new Promise(r=>setTimeout(r,700));
 
-  // Always reveal the app first. A secondary camera error must never leave a blank screen.
+  // Release the analysis video before opening the app.
+  try{
+    const analysisVideo=$("#analysisVideo");
+    analysisVideo.pause();
+    analysisVideo.srcObject=null;
+  }catch(e){}
+
+  // Show the app before attempting any secondary camera work.
   $("#analysisProgress").classList.add("hidden");
   $("#analysisIntro").classList.add("hidden");
   $("#appHeader").classList.remove("hidden");
   $("#bottomNav").classList.remove("hidden");
   $("#cameraStatus").textContent="Analyse terminée ✓";
-  switchTab("mirror");
 
   try{
     await startLiveViews();
   }catch(err){
     console.error("Ouverture du miroir impossible",err);
-    $("#cameraStatus").textContent="Analyse terminée ✓";
+    $$(".tab-view").forEach(v=>v.classList.toggle("active",v.id==="tab-mirror"));
+    $("#screenTitle").textContent="Miroir";
+    $("#mirrorRecovery").classList.remove("hidden");
     $("#guideMessage").textContent="Analyse enregistrée";
   }
 }
@@ -851,7 +908,7 @@ function drawMood(canvas,video,lm,mood){
 if("serviceWorker" in navigator){
   window.addEventListener("load",async()=>{
   try{
-    const reg=await navigator.serviceWorker.register("./sw.js?v=14",{updateViaCache:"none"});
+    const reg=await navigator.serviceWorker.register("./sw.js?v=15",{updateViaCache:"none"});
     await reg.update();
   }catch(err){
     console.error(err);

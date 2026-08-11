@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="Beauty Mirror">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=14">
+  <link rel="stylesheet" href="./styles.css?v=15">
   <title>Beauty Mirror</title>
 </head>
 <body>
@@ -54,7 +54,7 @@
 
       <header id="appHeader" class="topbar glass hidden">
         <div>
-          <div class="title-row"><div id="screenTitle" class="screen-title">Miroir</div><span class="version-badge">V14</span></div>
+          <div class="title-row"><div id="screenTitle" class="screen-title">Miroir</div><span class="version-badge">V15</span></div>
           <div id="cameraStatus" class="status-text">Analyse requise</div>
         </div>
         <button id="cameraButton" class="mini-button" type="button">Refaire l’analyse</button>
@@ -65,7 +65,8 @@
           <div class="camera-stage">
             <video id="mirrorVideo" autoplay playsinline muted></video>
             <canvas id="mirrorCanvas"></canvas>
-            <div id="guideMessage" class="guide-message">Active la caméra pour commencer</div>
+            <div id="guideMessage" class="guide-message">Analyse enregistrée</div>
+            <div id="mirrorRecovery" class="mirror-recovery hidden">Caméra momentanément indisponible · ton analyse reste enregistrée.</div>
           </div>
         </div>
 <div class="zone-strip" id="zoneStrip">
@@ -226,6 +227,6 @@
     </section>
   </main>
 
-  <script type="module" src="./app.js?v=14"></script>
+  <script type="module" src="./app.js?v=15"></script>
 </body>
 </html>

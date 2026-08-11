@@ -1,10 +1,12 @@
-# Beauty Mirror V14 — Correctif écran blanc
+# Beauty Mirror V15 — iPhone stabilité
 
-Correction du bug V13 après l’analyse :
-- restauration de la navigation entre les 5 interfaces ;
-- restauration de la caméra live après l’analyse ;
-- affichage du Miroir avant de relancer les vues secondaires ;
-- une erreur de caméra secondaire ne peut plus laisser une page blanche ;
-- toute la précision iris de V13 est conservée.
+Correctif écran blanc après analyse :
+- une seule vue caméra utilise le flux à la fois ;
+- la vidéo d’analyse est libérée avant l’ouverture du Miroir ;
+- MediaPipe ne traite que l’onglet actuellement visible ;
+- suivi facial limité à environ 10 images/s pour éviter de saturer Safari ;
+- l’interface s’affiche avant toute tentative de réouverture caméra ;
+- si la caméra échoue, le Miroir reste affiché avec l’analyse enregistrée au lieu d’un écran blanc.
 
-Badge V14 visible pour vérifier que la bonne version est chargée.
+La précision iris V13/V14 est conservée.
+Badge V15 visible.
