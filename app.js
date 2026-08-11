@@ -140,22 +140,15 @@ async function captureWithFlash(){
   $("#analysisProgressText").textContent="Ne bouge pas.";
 
   const flash=$("#globalScreenFlash");
-  const previousBackground=document.documentElement.style.backgroundColor;
-  const previousFilter=document.body.style.filter;
-  document.documentElement.style.backgroundColor="#ffffff";
-  document.body.style.filter="brightness(1.18)";
   flash.classList.add("on");
 
-  // Strong front-screen selfie flash: illuminate first, then sample colors.
-  await new Promise(r=>setTimeout(r,1150));
+  // Strong but safe front-screen flash: only the overlay is used.
+  await new Promise(r=>setTimeout(r,700));
 
   savedAnalysis=analyzeFace(latestLandmarks,$("#analysisVideo"));
 
-  await new Promise(r=>setTimeout(r,180));
   flash.classList.remove("on");
-  document.documentElement.style.backgroundColor=previousBackground;
-  document.body.style.filter=previousFilter;
-  await new Promise(r=>setTimeout(r,220));
+  await new Promise(r=>setTimeout(r,180));
 
   updateAll(savedAnalysis);
   $("#analysisProgressTitle").textContent="Analyse terminée ✓";

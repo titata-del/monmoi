@@ -115,12 +115,10 @@ button{touch-action:manipulation}
   background:#ffffff;
   opacity:0;
   pointer-events:none;
-  transition:opacity .025s linear;
-  box-shadow:0 0 0 120vmax #fff,inset 0 0 180px rgba(255,255,255,1);
+  transition:opacity .035s linear;
 }
 .global-screen-flash.on{
   opacity:1;
-  filter:brightness(1.55);
 }
 
 .analysis-intro{

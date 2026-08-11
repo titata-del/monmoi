@@ -10,3 +10,7 @@
 
 ## V5
 Flash écran selfie renforcé : blanc plein écran plus intense et plus long avant la capture des couleurs.
+
+
+## V6
+Correction du blocage écran blanc sur iPhone/Safari. Flash plein écran conservé sans modifier la luminosité globale de la page.
