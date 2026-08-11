@@ -224,8 +224,8 @@ function analyzeLoop(loopId){
 async function captureWithFlash(){
   if(capturing||!latestLandmarks)return;
   capturing=true;
-  $("#analysisProgressTitle").textContent="Capture des couleurs";
-  $("#analysisProgressText").textContent="Ne bouge pas.";
+  $("#analysisProgressTitle").textContent="Flash selfie";
+  $("#analysisProgressText").textContent="Ne bouge pas, lecture des couleurs…";
 
   const flash=$("#globalScreenFlash");
   flash.classList.remove("on");
@@ -234,7 +234,7 @@ async function captureWithFlash(){
 
   // The white edge glow lights the face while keeping the camera image visible.
   // Sample after iPhone auto-exposure has had time to react.
-  await new Promise(r=>setTimeout(r,620));
+  await new Promise(r=>setTimeout(r,760));
 
   try{
     savedAnalysis=analyzeFace(latestLandmarks,$("#analysisVideo"));
@@ -258,7 +258,7 @@ async function captureWithFlash(){
   $("#analysisProgressTitle").textContent="Analyse terminée ✓";
   $("#analysisProgressText").textContent="Tes caractéristiques ont été enregistrées.";
 
-  await new Promise(r=>setTimeout(r,700));
+  await new Promise(r=>setTimeout(r,760));
   $("#analysisProgress").classList.add("hidden");
   $("#appHeader").classList.remove("hidden");
   $("#bottomNav").classList.remove("hidden");
@@ -394,27 +394,158 @@ function mix(samples){const n=samples.length;return samples.reduce((a,c)=>[a[0]+
 function hex(c){return "#"+c.map(v=>clamp(v,0,255).toString(16).padStart(2,"0")).join("")}
 function lum([r,g,b]){return .2126*r+.7152*g+.0722*b}
 
-function irisName([r,g,b]){
-  const l=lum([r,g,b]);
-  if(b>r*1.12&&b>g*1.05)return l>105?"bleu-gris":"bleu foncé";
-  if(g>r*1.02&&g>b*1.08)return l>105?"vert-gris":"vert";
-  if(r>95&&g>70&&g/r>.58&&b<g*.9)return g>105?"noisette":"brun noisette";
-  return l<65?"brun très foncé":l<105?"brun foncé":"brun clair";
+
+function rgbToHsv([r,g,b]){
+  r/=255; g/=255; b/=255;
+  const max=Math.max(r,g,b), min=Math.min(r,g,b), d=max-min;
+  let h=0;
+  if(d!==0){
+    if(max===r) h=((g-b)/d)%6;
+    else if(max===g) h=(b-r)/d+2;
+    else h=(r-g)/d+4;
+    h*=60;
+    if(h<0) h+=360;
+  }
+  const s=max===0?0:d/max;
+  return [h,s,max];
 }
-function browName([r,g,b]){const l=lum([r,g,b]);if(l<55)return"brun-noir";if(l<90)return"brun foncé";if(r>g*1.15)return"brun chaud";return l>135?"châtain clair":"châtain"}
-function lipName([r,g,b]){const l=lum([r,g,b]);if(r>b*1.35&&r>g*1.22)return l>150?"rose pêche":"rose chaud";if(b>g*.95&&r>b*1.15)return l>145?"rose froid":"bois de rose";return l>150?"rose naturel clair":"rose naturel"}
-function skinName(c){const l=lum(c);if(l>205)return"très claire";if(l>175)return"claire";if(l>140)return"claire à moyenne";if(l>110)return"moyenne";if(l>82)return"mate";return"profonde"}
+function medianColor(samples){
+  const channels=[0,1,2].map(ch=>{
+    const vals=samples.map(c=>c[ch]).sort((a,b)=>a-b);
+    return vals[Math.floor(vals.length/2)];
+  });
+  return channels;
+}
+function sampleCluster(video,lm,ids,r=2){
+  const pts=[];
+  for(const id of ids){
+    const p=P(lm,id);
+    if(p) pts.push(getPixel(video,p.x,p.y,r));
+  }
+  return pts.length?medianColor(pts):[128,128,128];
+}
+function irisName(rgb){
+  const [h,s,v]=rgbToHsv(rgb);
+  const l=lum(rgb);
+  if(l<42) return "brun presque noir";
+  if(s<.16){
+    if(l>145) return "gris clair";
+    if(l>100) return "gris";
+    return "gris foncé";
+  }
+  if(h>=185&&h<=250){
+    if(s<.34) return "bleu-gris";
+    return v>.58?"bleu clair":"bleu profond";
+  }
+  if(h>=70&&h<185){
+    if(h<95&&s>.28) return "vert noisette";
+    if(s<.30) return "vert-gris";
+    return v>.52?"vert clair":"vert profond";
+  }
+  if(h>=35&&h<70){
+    if(s>.42&&v>.45) return "ambre";
+    return "noisette doré";
+  }
+  if(h>=18&&h<45){
+    if(l>120) return "brun clair";
+    if(l>78) return "brun noisette";
+    return "brun foncé";
+  }
+  return l>105?"brun clair":"brun foncé";
+}
+function browName(rgb){
+  const [h,s,v]=rgbToHsv(rgb);
+  const l=lum(rgb);
+  if(l<42) return "brun-noir";
+  if(l<68) return "brun très foncé";
+  if(l<92){
+    if(h<22||h>345) return "brun froid";
+    if(h>32&&h<55) return "brun chaud";
+    return "brun neutre";
+  }
+  if(l<122){
+    if(h>30&&h<55) return "châtain chaud";
+    if(s<.18) return "châtain cendré";
+    return "châtain moyen";
+  }
+  if(l<155) return s<.20?"châtain clair cendré":"châtain clair";
+  return h>35&&h<60?"blond doré":"blond cendré";
+}
+function lipName(rgb){
+  const [h,s,v]=rgbToHsv(rgb);
+  const l=lum(rgb);
+  if(s<.15) return l>155?"beige rosé clair":"beige rosé";
+  if(h>=345||h<8){
+    if(l<115) return "bois de rose profond";
+    if(l<150) return "bois de rose";
+    return "rose nude";
+  }
+  if(h>=8&&h<24){
+    if(s>.38&&l>135) return "corail doux";
+    if(l>150) return "rose pêche";
+    return "rose chaud";
+  }
+  if(h>=320&&h<345){
+    if(l<120) return "vieux rose profond";
+    if(s<.28) return "mauve rosé";
+    return "vieux rose";
+  }
+  if(h>=300&&h<320) return "mauve rosé";
+  return l>150?"rose naturel clair":"rose naturel";
+}
+function skinName(c){
+  const l=lum(c);
+  if(l>220) return "très claire";
+  if(l>195) return "claire";
+  if(l>168) return "claire à moyenne";
+  if(l>140) return "moyenne";
+  if(l>112) return "moyenne à mate";
+  if(l>88) return "mate";
+  if(l>62) return "foncée";
+  return "profonde";
+}
 
 function sampleColors(video,lm){
-  const skin=mix([getPixel(video,P(lm,123).x,P(lm,123).y,3),getPixel(video,P(lm,352).x,P(lm,352).y,3),getPixel(video,P(lm,9).x,P(lm,9).y,3)]);
-  const lips=mix([getPixel(video,P(lm,13).x,P(lm,13).y,2),getPixel(video,P(lm,14).x,P(lm,14).y,2)]);
-  const brows=mix([getPixel(video,P(lm,70).x,P(lm,70).y,2),getPixel(video,P(lm,105).x,P(lm,105).y,2),getPixel(video,P(lm,300).x,P(lm,300).y,2),getPixel(video,P(lm,334).x,P(lm,334).y,2)]);
-  const iris=mix([getPixel(video,P(lm,468)?.x??P(lm,159).x,P(lm,468)?.y??P(lm,159).y,2),getPixel(video,P(lm,473)?.x??P(lm,386).x,P(lm,473)?.y??P(lm,386).y,2)]);
-  const warmth=(skin[0]-skin[2])+(skin[1]-skin[2])*.25;
-  const undertone=warmth>48?"chaud":warmth<26?"froid":"neutre";
+  prepareSample(video);
+
+  const skin=medianColor([
+    getPixel(video,P(lm,123).x,P(lm,123).y,3),
+    getPixel(video,P(lm,352).x,P(lm,352).y,3),
+    getPixel(video,P(lm,9).x,P(lm,9).y,3),
+    getPixel(video,P(lm,50).x,P(lm,50).y,3),
+    getPixel(video,P(lm,280).x,P(lm,280).y,3)
+  ]);
+
+  const lips=sampleCluster(video,lm,[13,14,61,291,78,308],2);
+  const brows=sampleCluster(video,lm,[70,63,105,107,300,293,334,336],2);
+
+  const irisSamples=[];
+  for(const id of [468,469,470,471,472,473,474,475,476,477]){
+    const p=P(lm,id);
+    if(p) irisSamples.push(getPixel(video,p.x,p.y,1));
+  }
+  if(!irisSamples.length){
+    irisSamples.push(getPixel(video,P(lm,159).x,P(lm,159).y,1));
+    irisSamples.push(getPixel(video,P(lm,386).x,P(lm,386).y,1));
+  }
+  const iris=medianColor(irisSamples);
+
+  const [h,s,v]=rgbToHsv(skin);
+  let undertone="neutre";
+  if(h>=18&&h<=50&&s>.16) undertone="chaud";
+  else if((h<15||h>330)&&s>.12) undertone="froid";
+  else if(h>=50&&h<=95&&s>.12) undertone="olive";
+
   const contrastValue=Math.abs(lum(skin)-lum(iris));
-  const contrast=contrastValue>=95?"fort":contrastValue>=55?"moyen":"doux";
-  return {skinHex:hex(skin),skinName:skinName(skin),lipHex:hex(lips),lipName:lipName(lips),browHex:hex(brows),browName:browName(brows),irisHex:hex(iris),irisName:irisName(iris),undertone,contrast};
+  const contrast=contrastValue>=100?"fort":contrastValue>=60?"moyen":"doux";
+
+  return {
+    skinHex:hex(skin),skinName:skinName(skin),
+    lipHex:hex(lips),lipName:lipName(lips),
+    browHex:hex(brows),browName:browName(brows),
+    irisHex:hex(iris),irisName:irisName(iris),
+    undertone,contrast
+  };
 }
 
 function colorPill(name,color){
@@ -526,7 +657,7 @@ function drawMood(canvas,video,lm,mood){
 if("serviceWorker" in navigator){
   window.addEventListener("load",async()=>{
   try{
-    const reg=await navigator.serviceWorker.register("./sw.js?v=9",{updateViaCache:"none"});
+    const reg=await navigator.serviceWorker.register("./sw.js?v=10",{updateViaCache:"none"});
     await reg.update();
   }catch(err){
     console.error(err);
