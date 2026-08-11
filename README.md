@@ -1,29 +1,13 @@
-# Luma — Beauty Mirror V1
+# Beauty Mirror V2
 
-Première base PWA mobile du projet.
+Code de déverrouillage : 071079
 
-## Onglets
-- Miroir : caméra + landmarks esthétiques + consultation des zones du visage
-- Analyse : morphologie, sourcils recommandés, colorimétrie, yeux/contraste
-- Essayer : structure prête pour sourcils, yeux, blush, bronzer, lèvres et teint
-- Conseils : mood du jour + recommandations personnalisées
-- Profil : analyse, colorimétrie, réglages/confidentialité
+Cette archive correspond à la maquette interactive actuelle.
+Important : l'analyse faciale affichée est encore simulée dans cette version.
+Le prochain développement doit remplacer ces données simulées par une vraie
+analyse caméra/landmarks (par exemple MediaPipe Face Landmarker), puis relier
+les résultats aux onglets Miroir, Analyse, Essayer et Conseils.
 
-`Mes looks` et `Historique` ont volontairement été retirés de cette V1.
-
-## Mise en ligne GitHub Pages
-1. Créer un dépôt GitHub public.
-2. Envoyer tous les fichiers de ce dossier à la racine du dépôt.
-3. GitHub > Settings > Pages.
-4. Source : Deploy from a branch.
-5. Branch : main / root.
-6. Ouvrir l'URL HTTPS fournie par GitHub Pages.
-
-La caméra nécessite HTTPS. GitHub Pages convient.
-
-## Important
-Les landmarks utilisent MediaPipe chargé depuis un CDN. Si MediaPipe ne se charge pas, l'interface reste utilisable mais sans points faciaux automatiques.
-
-
-## Verrouillage
-Cette version inclut un écran de déverrouillage à 6 chiffres inspiré d'iOS. Code configuré : 071079. Il s'agit d'un verrou d'interface côté navigateur et non d'une authentification serveur.
+## GitHub Pages
+Envoyer index.html, manifest.json et sw.js à la racine du dépôt.
+Puis activer Settings > Pages > Deploy from a branch > main / root.

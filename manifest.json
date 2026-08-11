@@ -1,12 +1,9 @@
 {
-  "name":"Luma — Beauty Mirror",
-  "short_name":"Luma",
-  "start_url":"./",
-  "display":"standalone",
-  "background_color":"#f7f2f5",
-  "theme_color":"#f6f1f4",
-  "icons":[
-    {"src":"assets/icon-192.png","sizes":"192x192","type":"image/png"},
-    {"src":"assets/icon-512.png","sizes":"512x512","type":"image/png"}
-  ]
+  "name": "Beauty Mirror",
+  "short_name": "Beauty",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f7eef5",
+  "theme_color": "#f7eef5",
+  "lang": "fr"
 }
