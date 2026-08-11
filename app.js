@@ -234,7 +234,7 @@ async function captureWithFlash(){
 
   // The white edge glow lights the face while keeping the camera image visible.
   // Sample after iPhone auto-exposure has had time to react.
-  await new Promise(r=>setTimeout(r,760));
+  await new Promise(r=>setTimeout(r,980));
 
   try{
     savedAnalysis=analyzeFace(latestLandmarks,$("#analysisVideo"));
@@ -258,7 +258,7 @@ async function captureWithFlash(){
   $("#analysisProgressTitle").textContent="Analyse terminée ✓";
   $("#analysisProgressText").textContent="Tes caractéristiques ont été enregistrées.";
 
-  await new Promise(r=>setTimeout(r,760));
+  await new Promise(r=>setTimeout(r,980));
   $("#analysisProgress").classList.add("hidden");
   $("#appHeader").classList.remove("hidden");
   $("#bottomNav").classList.remove("hidden");
@@ -657,7 +657,7 @@ function drawMood(canvas,video,lm,mood){
 if("serviceWorker" in navigator){
   window.addEventListener("load",async()=>{
   try{
-    const reg=await navigator.serviceWorker.register("./sw.js?v=10",{updateViaCache:"none"});
+    const reg=await navigator.serviceWorker.register("./sw.js?v=11",{updateViaCache:"none"});
     await reg.update();
   }catch(err){
     console.error(err);

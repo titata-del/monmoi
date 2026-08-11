@@ -1,7 +1,6 @@
-# Beauty Mirror V10
+# Beauty Mirror V11
 
-- Flash selfie poussé au maximum possible en PWA : halo blanc très intense autour du visage, centre visible.
-- Lecture des couleurs améliorée par plusieurs points et médiane.
-- Noms de couleurs plus précis pour iris, sourcils, lèvres et peau.
-- Sous-ton : chaud, froid, neutre ou olive.
-- Badge V10 visible pour confirmer que la bonne version est chargée.
+- Flash selfie poussé au maximum visuel possible en PWA.
+- Halo blanc beaucoup plus massif sur les bords avec centre caméra conservé.
+- Temps de flash allongé avant capture des couleurs.
+- Badge V11 pour vérifier que la bonne version est chargée.
