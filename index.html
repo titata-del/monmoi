@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f6f1f4" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Luma" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="assets/icon-192.png" />
+  <link rel="stylesheet" href="style.css" />
+  <title>Luma — Beauty Mirror</title>
+</head>
+<body class="locked">
+  <section class="passcode-lock" id="passcodeLock" aria-label="Écran de verrouillage">
+    <div class="lock-glow lock-glow-a"></div>
+    <div class="lock-glow lock-glow-b"></div>
+    <div class="passcode-panel">
+      <div class="lock-mark" aria-hidden="true">✦</div>
+      <span class="lock-brand">LUMA</span>
+      <h1>Entre ton code</h1>
+      <p class="lock-subtitle">Saisis le code à 6 chiffres pour ouvrir ton miroir.</p>
+      <div class="passcode-dots" id="passcodeDots" aria-label="Code saisi : 0 chiffre sur 6">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <div class="keypad" id="keypad" aria-label="Pavé numérique">
+        <button type="button" class="key" data-key="1"><strong>1</strong></button>
+        <button type="button" class="key" data-key="2"><strong>2</strong><small>ABC</small></button>
+        <button type="button" class="key" data-key="3"><strong>3</strong><small>DEF</small></button>
+        <button type="button" class="key" data-key="4"><strong>4</strong><small>GHI</small></button>
+        <button type="button" class="key" data-key="5"><strong>5</strong><small>JKL</small></button>
+        <button type="button" class="key" data-key="6"><strong>6</strong><small>MNO</small></button>
+        <button type="button" class="key" data-key="7"><strong>7</strong><small>PQRS</small></button>
+        <button type="button" class="key" data-key="8"><strong>8</strong><small>TUV</small></button>
+        <button type="button" class="key" data-key="9"><strong>9</strong><small>WXYZ</small></button>
+        <span class="key-spacer" aria-hidden="true"></span>
+        <button type="button" class="key" data-key="0"><strong>0</strong></button>
+        <button type="button" class="delete-key" id="deleteKey" aria-label="Effacer le dernier chiffre">⌫</button>
+      </div>
+      <p class="passcode-error" id="passcodeError" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <main class="app-shell">
+    <header class="topbar glass">
+      <div>
+        <span class="eyebrow">LUMA</span>
+        <h1 id="screenTitle">Miroir</h1>
+      </div>
+      <button class="icon-btn" id="infoBtn" aria-label="À propos">i</button>
+    </header>
+
+    <section class="screen active" id="mirrorScreen" data-screen="mirror">
+      <div class="camera-card">
+        <video id="camera" autoplay muted playsinline></video>
+        <canvas id="overlay"></canvas>
+        <div class="camera-placeholder" id="cameraPlaceholder">
+          <div class="face-orbit" aria-hidden="true"></div>
+          <h2>Ton miroir intelligent</h2>
+          <p>Active la caméra pour observer les caractéristiques de ton visage.</p>
+          <button class="primary-btn" id="startCamera">Activer la caméra</button>
+        </div>
+        <div class="mirror-hint glass" id="mirrorHint">Positionne ton visage au centre</div>
+        <button class="scan-btn glass" id="scanBtn" disabled>
+          <span class="scan-dot"></span>
+          Analyser les zones
+        </button>
+      </div>
+
+      <div class="zone-sheet glass" id="zoneSheet" hidden>
+        <div class="zone-head">
+          <div>
+            <span class="eyebrow">CARACTÉRISTIQUES</span>
+            <h2 id="zoneTitle">Visage</h2>
+          </div>
+          <button class="icon-btn" id="closeZone" aria-label="Fermer">×</button>
+        </div>
+        <div id="zoneContent" class="zone-content"></div>
+      </div>
+    </section>
+
+    <section class="screen" id="analysisScreen" data-screen="analysis">
+      <div class="hero-card glass">
+        <span class="eyebrow">TON PROFIL</span>
+        <h2>Comprendre ton visage</h2>
+        <p>Analyse morphologique, colorimétrie et recommandations personnalisées.</p>
+        <button class="primary-btn" id="runAnalysis">Créer mon analyse</button>
+      </div>
+      <div class="cards-grid" id="analysisCards"></div>
+    </section>
+
+    <section class="screen" id="tryScreen" data-screen="try">
+      <div class="hero-card glass">
+        <span class="eyebrow">ESSAYER</span>
+        <h2>Teste sans te transformer</h2>
+        <p>Sourcils, yeux, blush, bronzer, lèvres et teint avec un rendu naturel.</p>
+      </div>
+      <div class="try-categories" id="tryCategories"></div>
+      <div class="preview-card glass">
+        <div class="preview-face" aria-hidden="true">
+          <div class="preview-eye left"></div><div class="preview-eye right"></div>
+          <div class="preview-brow left"></div><div class="preview-brow right"></div>
+          <div class="preview-lips"></div>
+        </div>
+        <p id="tryMessage">Sélectionne une catégorie pour préparer un essai.</p>
+      </div>
+    </section>
+
+    <section class="screen" id="adviceScreen" data-screen="advice">
+      <div class="hero-card glass mood-card">
+        <span class="eyebrow">AUJOURD'HUI</span>
+        <h2>Quel est ton mood ?</h2>
+        <p>On associera ton humeur à ta carnation, tes yeux et ta colorimétrie.</p>
+        <div class="moods" id="moods"></div>
+      </div>
+      <div id="moodResult" class="mood-result glass" hidden></div>
+      <div class="advice-list" id="adviceList"></div>
+    </section>
+
+    <section class="screen" id="profileScreen" data-screen="profile">
+      <div class="profile-head glass">
+        <div class="profile-avatar">L</div>
+        <div><span class="eyebrow">PROFIL</span><h2>Mon profil beauté</h2></div>
+      </div>
+      <button class="profile-row glass" data-target="analysis">
+        <span class="profile-icon">✦</span><span><strong>Mon analyse</strong><small>Relancer ou consulter l'analyse</small></span><b>›</b>
+      </button>
+      <button class="profile-row glass" data-target="analysis">
+        <span class="profile-icon">◌</span><span><strong>Ma colorimétrie</strong><small>Palette, contraste et sous-ton estimé</small></span><b>›</b>
+      </button>
+      <button class="profile-row glass" id="privacyBtn">
+        <span class="profile-icon">⌁</span><span><strong>Réglages & confidentialité</strong><small>Caméra et données du visage</small></span><b>›</b>
+      </button>
+    </section>
+
+    <nav class="bottom-nav glass" aria-label="Navigation principale">
+      <button class="nav-item active" data-target="mirror"><span>◉</span><small>Miroir</small></button>
+      <button class="nav-item" data-target="analysis"><span>◇</span><small>Analyse</small></button>
+      <button class="nav-item" data-target="try"><span>✦</span><small>Essayer</small></button>
+      <button class="nav-item" data-target="advice"><span>♡</span><small>Conseils</small></button>
+      <button class="nav-item" data-target="profile"><span>○</span><small>Profil</small></button>
+    </nav>
+  </main>
+
+  <dialog id="modal" class="modal glass">
+    <button class="icon-btn modal-close" id="modalClose" aria-label="Fermer">×</button>
+    <div id="modalBody"></div>
+  </dialog>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
