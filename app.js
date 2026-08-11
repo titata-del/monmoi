@@ -12,17 +12,27 @@ let stream = null;
 let landmarker = null;
 let lastVideoTime = -1;
 let latestLandmarks = null;
-let latestAnalysis = null;
+let frozenAnalysis = null;
 let raf = null;
 let activeZone = "face";
 let activeEffect = "brows";
 let effectIntensity = 0.55;
 let activeColor = "#8a5a52";
 let activeMood = null;
-let sampleCanvas = document.createElement("canvas");
-let sampleCtx = sampleCanvas.getContext("2d", { willReadFrequently: true });
 
+let stableFrames = 0;
+let analysisRunning = false;
+let analysisDone = false;
+let flashInProgress = false;
+
+const sampleCanvas = document.createElement("canvas");
+const sampleCtx = sampleCanvas.getContext("2d", { willReadFrequently: true });
 const videos = [$("#mirrorVideo"), $("#tryVideo"), $("#adviceVideo")];
+
+const FACE_OVAL = [
+  10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,
+  152,148,176,149,150,136,172,58,132,93,234,127,162,21,54,103,67,109
+];
 
 function buildPinUI(){
   const dots = $("#pinDots");
@@ -123,16 +133,13 @@ $$(".mood-card").forEach(btn=>btn.addEventListener("click",()=>{
 }));
 
 $("#cameraButton").addEventListener("click",startCamera);
-
-$("#flashButton").addEventListener("click", async ()=>{
-  const flash=$("#screenFlash");
-  flash.classList.add("on");
-  $("#guideMessage").textContent="Éclairage du visage…";
-  await new Promise(r=>setTimeout(r,520));
-  flash.classList.remove("on");
-  setTimeout(()=>{
-    if(latestLandmarks) $("#guideMessage").textContent="Analyse active";
-  },180);
+$("#flashButton").addEventListener("click",()=>{
+  if(!stream || !landmarker) return;
+  analysisDone=false;
+  frozenAnalysis=null;
+  stableFrames=0;
+  $("#cameraStatus").textContent="Préparation de l’analyse…";
+  $("#guideMessage").textContent="Regarde droit devant toi";
 });
 
 async function initLandmarker(){
@@ -142,9 +149,9 @@ async function initLandmarker(){
     baseOptions:{modelAssetPath:MODEL_URL,delegate:"GPU"},
     runningMode:"VIDEO",
     numFaces:1,
-    minFaceDetectionConfidence:.55,
-    minFacePresenceConfidence:.55,
-    minTrackingConfidence:.55,
+    minFaceDetectionConfidence:.62,
+    minFacePresenceConfidence:.62,
+    minTrackingConfidence:.62,
     outputFaceBlendshapes:true,
     outputFacialTransformationMatrixes:true
   });
@@ -165,11 +172,11 @@ async function startCamera(){
     videos.forEach(v=>v.srcObject=stream);
     await Promise.all(videos.map(v=>v.play().catch(()=>{})));
     await initLandmarker();
-    $("#cameraStatus").textContent="Analyse en direct";
+    $("#cameraStatus").textContent="Place ton visage face caméra";
     $("#cameraButton").textContent="Active";
-    $("#guideMessage").textContent="Place ton visage face caméra";
-    $("#tryHint").textContent="Analyse en direct";
-    $("#adviceHint").textContent="Analyse en direct";
+    $("#guideMessage").textContent="Regarde droit devant toi";
+    $("#tryHint").textContent="Caméra active";
+    $("#adviceHint").textContent="Caméra active";
     loop();
   }catch(err){
     console.error(err);
@@ -188,18 +195,24 @@ function loop(){
     const result=landmarker.detectForVideo(v,now);
     if(result.faceLandmarks?.length){
       latestLandmarks=result.faceLandmarks[0];
-      latestAnalysis=analyzeFace(latestLandmarks,v);
-      updateAnalysisUI(latestAnalysis);
-      $("#cameraStatus").textContent="Visage détecté ✓ · analyse en direct";
-      $("#guideMessage").textContent="Analyse active";
-      drawLandmarks($("#mirrorCanvas"),v,latestLandmarks);
+      drawFaceGuide($("#mirrorCanvas"),v,latestLandmarks);
+
+      if(!analysisDone && !flashInProgress){
+        stableFrames++;
+        $("#cameraStatus").textContent="Visage détecté";
+        $("#guideMessage").textContent=stableFrames<12?"Reste immobile…":"Analyse…";
+        if(stableFrames>=14) runFlashCapture();
+      }
+
       drawMakeup($("#tryCanvas"),$("#tryVideo"),latestLandmarks,activeEffect,activeColor,effectIntensity);
       drawMood($("#adviceCanvas"),$("#adviceVideo"),latestLandmarks,activeMood);
-      renderMirrorZone();
     }else{
       latestLandmarks=null;
-      $("#cameraStatus").textContent="Place ton visage face caméra";
-      $("#guideMessage").textContent="Visage non détecté";
+      stableFrames=0;
+      if(!analysisDone){
+        $("#cameraStatus").textContent="Place ton visage face caméra";
+        $("#guideMessage").textContent="Visage non détecté";
+      }
       clearCanvas($("#mirrorCanvas"));
       clearCanvas($("#tryCanvas"));
       clearCanvas($("#adviceCanvas"));
@@ -208,15 +221,45 @@ function loop(){
   raf=requestAnimationFrame(loop);
 }
 
+async function runFlashCapture(){
+  if(flashInProgress || !latestLandmarks) return;
+  flashInProgress=true;
+  analysisRunning=true;
+  $("#cameraStatus").textContent="Capture des couleurs…";
+  $("#guideMessage").textContent="Ne bouge pas";
+  const flash=$("#screenFlash");
+  flash.classList.add("on");
+
+  // Give the screen enough time to illuminate the face before reading pixels.
+  await new Promise(r=>setTimeout(r,650));
+
+  if(latestLandmarks){
+    frozenAnalysis=analyzeFace(latestLandmarks,$("#mirrorVideo"));
+    updateAnalysisUI(frozenAnalysis);
+    renderMirrorZone();
+  }
+
+  flash.classList.remove("on");
+  await new Promise(r=>setTimeout(r,180));
+  analysisRunning=false;
+  analysisDone=Boolean(frozenAnalysis);
+  flashInProgress=false;
+  stableFrames=0;
+
+  if(analysisDone){
+    $("#cameraStatus").textContent="Analyse terminée ✓";
+    $("#guideMessage").textContent="Analyse terminée";
+  }
+}
+
 function P(lm,i){return lm[i]}
 function d(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
 function avg(...n){return n.reduce((a,b)=>a+b,0)/n.length}
 function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
 function label3(v,a,b,labels){return v<a?labels[0]:v>b?labels[2]:labels[1]}
-function signedSlope(a,b){return (b.y-a.y)/(Math.abs(b.x-a.x)+1e-6)}
+function deg(a,b){return Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI}
 
 function analyzeFace(lm,video){
-  // Face proportions using stable MediaPipe landmark anchors.
   const left=P(lm,234), right=P(lm,454), top=P(lm,10), chin=P(lm,152);
   const faceW=d(left,right), faceH=d(top,chin), ratio=faceH/(faceW||1);
 
@@ -225,7 +268,6 @@ function analyzeFace(lm,video){
 
   const foreheadY=(P(lm,10).y + P(lm,151).y)/2;
   const browY=avg(P(lm,70).y,P(lm,300).y);
-  const eyeY=avg(P(lm,33).y,P(lm,263).y);
   const foreheadShare=(browY-foreheadY)/(faceH||1);
 
   const mouthW=d(P(lm,61),P(lm,291))/(faceW||1);
@@ -234,7 +276,11 @@ function analyzeFace(lm,video){
   const eyeLeftW=d(P(lm,33),P(lm,133));
   const eyeLeftH=d(P(lm,159),P(lm,145));
   const eyeRatio=eyeLeftW/(eyeLeftH||1);
-  const eyeSlope=avg(signedSlope(P(lm,33),P(lm,133)),signedSlope(P(lm,362),P(lm,263)));
+
+  // Precise visible tilt: outer vs inner corner, averaged across both eyes.
+  const leftTilt=deg(P(lm,133),P(lm,33));
+  const rightTilt=deg(P(lm,362),P(lm,263));
+  const eyeTiltDeg=(leftTilt+rightTilt)/2;
 
   const browThickness=avg(d(P(lm,70),P(lm,63)),d(P(lm,300),P(lm,293)))/(faceH||1);
   const browArch=avg(
@@ -252,84 +298,146 @@ function analyzeFace(lm,video){
 
   const forehead=label3(foreheadShare,.17,.24,["court","moyen","haut"]);
   const eyeShape=eyeRatio>3.2?"amande":eyeRatio<2.5?"rond":"amande douce";
-  const eyeTilt=eyeSlope<-0.08?"relevée":eyeSlope>0.08?"descendante":"neutre";
-  const browSize=label3(browThickness,.010,.018,["fin","moyen","épais"]);
-  const browShape=browArch<-0.018?"arqué":Math.abs(browArch)<0.010?"droit":"courbe douce";
+  const eyeTilt=eyeTiltDeg>4?`relevée d’environ ${Math.round(eyeTiltDeg)}°`:eyeTiltDeg<-4?`descendante d’environ ${Math.abs(Math.round(eyeTiltDeg))}°`:`presque horizontale (${Math.abs(Math.round(eyeTiltDeg))}°)`;
+  const browSize=label3(browThickness,.010,.018,["fins","moyens","épais"]);
+  const browShape=browArch<-0.018?"arqués":Math.abs(browArch)<0.010?"plutôt droits":"courbe douce";
   const lipWidth=label3(mouthW,.34,.43,["étroite","moyenne","large"]);
   const lipVolume=label3(lipH,.018,.035,["fin","moyen","plein"]);
-  const lipShape=lipVolume==="plein"?"pulpeuse":lipWidth==="large"?"étirée douce":lipVolume==="fin"?"fine définie":"équilibrée";
+  const lipShape=lipVolume==="plein"?"pulpeuses":lipWidth==="large"?"étirées douces":lipVolume==="fin"?"fines et définies":"équilibrées";
   const jaw=label3(jawW,.66,.76,["fine","moyenne","large"]);
   const chinShape=chinWidth<.24?"pointu":chinWidth>.34?"large et arrondi":"arrondi";
 
   const colors=sampleColors(video,lm);
-  return {faceShape,forehead,foreheadShare,eyeShape,eyeTilt,browSize,browShape,lipWidth,lipVolume,lipShape,jaw,chinShape,...colors};
+  return {faceShape,forehead,eyeShape,eyeTilt,eyeTiltDeg,browSize,browShape,lipWidth,lipVolume,lipShape,jaw,chinShape,...colors};
 }
 
-function getPixel(video,x,y){
+function prepareSample(video){
+  const w=video.videoWidth,h=video.videoHeight;
+  if(!w||!h) return false;
+  sampleCanvas.width=w;
+  sampleCanvas.height=h;
+  sampleCtx.drawImage(video,0,0,w,h);
+  return true;
+}
+function getPixel(video,x,y,radius=2){
   const w=video.videoWidth,h=video.videoHeight;
   if(!w||!h) return [180,140,125];
-  sampleCanvas.width=w; sampleCanvas.height=h;
-  sampleCtx.drawImage(video,0,0,w,h);
-  const px=clamp(Math.round(x*w),0,w-1), py=clamp(Math.round(y*h),0,h-1);
-  const data=sampleCtx.getImageData(px,py,1,1).data;
-  return [data[0],data[1],data[2]];
+  const px=clamp(Math.round(x*w),radius,w-radius-1);
+  const py=clamp(Math.round(y*h),radius,h-radius-1);
+  const size=radius*2+1;
+  const data=sampleCtx.getImageData(px-radius,py-radius,size,size).data;
+  let rr=0,gg=0,bb=0,n=0;
+  for(let i=0;i<data.length;i+=4){
+    rr+=data[i];gg+=data[i+1];bb+=data[i+2];n++;
+  }
+  return [Math.round(rr/n),Math.round(gg/n),Math.round(bb/n)];
 }
 function mixColor(samples){
   const n=samples.length;
   return samples.reduce((a,c)=>[a[0]+c[0]/n,a[1]+c[1]/n,a[2]+c[2]/n],[0,0,0]).map(Math.round);
 }
-function rgbHex(c){return "#"+c.map(v=>v.toString(16).padStart(2,"0")).join("")}
+function rgbHex(c){return "#"+c.map(v=>clamp(v,0,255).toString(16).padStart(2,"0")).join("")}
 function luminance([r,g,b]){return .2126*r+.7152*g+.0722*b}
+function saturation([r,g,b]){
+  const max=Math.max(r,g,b),min=Math.min(r,g,b);
+  return max===0?0:(max-min)/max;
+}
+function colorName(rgb,type){
+  const [r,g,b]=rgb;
+  const lum=luminance(rgb);
+  const sat=saturation(rgb);
+
+  if(type==="iris"){
+    if(b>r*1.12 && b>g*1.05) return lum>105?"bleu-gris":"bleu foncé";
+    if(g>r*1.02 && g>b*1.08) return lum>105?"vert-gris":"vert";
+    if(r>95 && g>70 && g/r>.58 && b<g*.9) return g>105?"noisette":"brun noisette";
+    return lum<65?"brun très foncé":lum<105?"brun foncé":"brun clair";
+  }
+  if(type==="brow"){
+    if(lum<55) return "brun-noir";
+    if(lum<90) return "brun foncé";
+    if(r>g*1.15) return "brun chaud";
+    return lum>135?"châtain clair":"châtain";
+  }
+  if(type==="lip"){
+    if(r>b*1.35 && r>g*1.22) return lum>150?"rose pêche":"rose chaud";
+    if(b>g*.95 && r>b*1.15) return lum>145?"rose froid":"bois de rose";
+    return lum>150?"rose naturel clair":"rose naturel";
+  }
+  if(type==="skin"){
+    if(lum>205) return "très claire";
+    if(lum>175) return "claire";
+    if(lum>140) return "claire à moyenne";
+    if(lum>110) return "moyenne";
+    if(lum>82) return "mate";
+    return "profonde";
+  }
+  return rgbHex(rgb);
+}
+
 function sampleColors(video,lm){
+  prepareSample(video);
+
   const skin=mixColor([
-    getPixel(video,P(lm,123).x,P(lm,123).y),
-    getPixel(video,P(lm,352).x,P(lm,352).y),
-    getPixel(video,P(lm,9).x,P(lm,9).y)
+    getPixel(video,P(lm,123).x,P(lm,123).y,3),
+    getPixel(video,P(lm,352).x,P(lm,352).y,3),
+    getPixel(video,P(lm,9).x,P(lm,9).y,3)
   ]);
   const lips=mixColor([
-    getPixel(video,P(lm,13).x,P(lm,13).y),
-    getPixel(video,P(lm,14).x,P(lm,14).y)
+    getPixel(video,P(lm,13).x,P(lm,13).y,2),
+    getPixel(video,P(lm,14).x,P(lm,14).y,2),
+    getPixel(video,P(lm,61).x*.35+P(lm,291).x*.65,P(lm,13).y,2)
   ]);
   const brows=mixColor([
-    getPixel(video,P(lm,70).x,P(lm,70).y),
-    getPixel(video,P(lm,300).x,P(lm,300).y)
+    getPixel(video,P(lm,70).x,P(lm,70).y,2),
+    getPixel(video,P(lm,105).x,P(lm,105).y,2),
+    getPixel(video,P(lm,300).x,P(lm,300).y,2),
+    getPixel(video,P(lm,334).x,P(lm,334).y,2)
   ]);
-  const irisL=getPixel(video,P(lm,468)?.x ?? P(lm,159).x,P(lm,468)?.y ?? P(lm,159).y);
-  const irisR=getPixel(video,P(lm,473)?.x ?? P(lm,386).x,P(lm,473)?.y ?? P(lm,386).y);
+
+  const irisL=getPixel(video,P(lm,468)?.x ?? P(lm,159).x,P(lm,468)?.y ?? P(lm,159).y,2);
+  const irisR=getPixel(video,P(lm,473)?.x ?? P(lm,386).x,P(lm,473)?.y ?? P(lm,386).y,2);
   const iris=mixColor([irisL,irisR]);
+
   const warmth=(skin[0]-skin[2])+(skin[1]-skin[2])*.25;
-  const undertone=warmth>45?"chaud":warmth<25?"froid":"neutre";
-  const light=luminance(skin);
-  const complexion=light>190?"claire":light>145?"moyenne":light>100?"mate":"profonde";
-  const contrast=Math.abs(luminance(skin)-luminance(iris));
-  const contrastLabel=contrast>95?"fort":contrast>55?"moyen":"doux";
+  const undertone=warmth>48?"chaud":warmth<26?"froid":"neutre";
+  const complexion=colorName(skin,"skin");
+
+  // One consistent contrast measure: difference between skin and iris luminance.
+  const contrastValue=Math.abs(luminance(skin)-luminance(iris));
+  const contrastLabel=contrastValue>=95?"fort":contrastValue>=55?"moyen":"doux";
+
   return {
-    skinHex:rgbHex(skin),lipHex:rgbHex(lips),irisHex:rgbHex(iris),browHex:rgbHex(brows),
-    undertone,complexion,contrastLabel
+    skinHex:rgbHex(skin), skinName:colorName(skin,"skin"),
+    lipHex:rgbHex(lips), lipName:colorName(lips,"lip"),
+    irisHex:rgbHex(iris), irisName:colorName(iris,"iris"),
+    browHex:rgbHex(brows), browName:colorName(brows,"brow"),
+    undertone, complexion, contrastLabel
   };
 }
 
 function updateAnalysisUI(a){
-  $("#aFace").textContent=`Visage ${a.faceShape}. Structure globale détectée à partir du contour et des proportions du visage.`;
-  $("#aForehead").textContent=`Front ${a.forehead}. Sa place dans le tiers supérieur du visage est ${a.forehead==="haut"?"marquée":a.forehead==="court"?"compacte":"équilibrée"}.`;
-  $("#aEyes").textContent=`Yeux ${a.eyeShape}, inclinaison ${a.eyeTilt}. Avec cette lumière, l’iris détecté est ${a.irisHex}.`;
-  $("#aBrows").textContent=`Sourcils ${a.browSize}, forme ${a.browShape}. Avec cette lumière, teinte détectée : ${a.browHex}.`;
-  $("#aLips").textContent=`Lèvres ${a.lipShape}, largeur ${a.lipWidth}, volume ${a.lipVolume}. Teinte détectée maintenant : ${a.lipHex}.`;
+  $("#aFace").textContent=`Visage ${a.faceShape}.`;
+  $("#aForehead").textContent=`Front ${a.forehead}.`;
+  $("#aEyes").textContent=`Yeux ${a.eyeShape}, inclinaison ${a.eyeTilt}. Couleur relevée pendant le flash : ${a.irisName} (${a.irisHex}).`;
+  $("#aBrows").textContent=`Sourcils ${a.browSize}, ${a.browShape}. Couleur relevée pendant le flash : ${a.browName} (${a.browHex}).`;
+  $("#aLips").textContent=`Lèvres ${a.lipShape}, largeur ${a.lipWidth}, volume ${a.lipVolume}. Couleur relevée pendant le flash : ${a.lipName} (${a.lipHex}).`;
   $("#aJaw").textContent=`Mâchoire ${a.jaw}. Menton ${a.chinShape}.`;
-  $("#aColor").textContent=`Carnation ${a.complexion}, sous-ton ${a.undertone}, contraste ${a.contrastLabel}. La couleur de peau lue maintenant est ${a.skinHex}; ces valeurs suivent l’image de la caméra.`;
+  $("#aColor").textContent=`Peau ${a.skinName}, sous-ton ${a.undertone}, contraste ${a.contrastLabel}. Couleur relevée pendant le flash : ${a.skinHex}.`;
   $("#aBrowAdvice").textContent=browAdvice(a.faceShape);
   $("#profileAnalysis").textContent=`Visage ${a.faceShape} · yeux ${a.eyeShape} · mâchoire ${a.jaw}.`;
-  $("#profileColor").textContent=`Carnation ${a.complexion} · sous-ton ${a.undertone} · contraste ${a.contrastLabel}.`;
+  $("#profileColor").textContent=`Peau ${a.skinName} · sous-ton ${a.undertone} · contraste ${a.contrastLabel}.`;
   const pal=recommendPalette(a);
   $("#palette").innerHTML=pal.map(c=>`<span class="palette-swatch" style="background:${c}"></span>`).join("");
 }
+
 function browAdvice(shape){
   const map={
     rond:"Soft arch : un arc doux apporte de la structure tout en gardant un résultat naturel.",
     allongé:"Droit doux : une ligne moins arquée équilibre visuellement la longueur du visage.",
     carré:"Arc doux : une courbe souple adoucit la structure de la mâchoire.",
     cœur:"Arc léger : une montée progressive équilibre le front et le menton.",
-    ovale:"Arc naturel : la morphologie accepte une ligne douce sans correction marquée."
+    ovale:"Arc naturel : une ligne douce respecte l’équilibre général du visage."
   };
   return map[shape]||map.ovale;
 }
@@ -340,16 +448,20 @@ function recommendPalette(a){
 }
 
 function renderMirrorZone(){
-  if(!latestAnalysis) return;
-  const a=latestAnalysis;
+  if(!frozenAnalysis) {
+    $("#mirrorResultTitle").textContent="Analyse";
+    $("#mirrorResult").textContent=analysisRunning?"Capture des couleurs en cours…":"Place ton visage face caméra pour lancer l’analyse.";
+    return;
+  }
+  const a=frozenAnalysis;
   const data={
-    face:["Visage",`Forme ${a.faceShape}. Structure globale analysée en direct.`],
-    forehead:["Front",`Hauteur ${a.forehead}. Proportion ${a.forehead==="haut"?"dominante":a.forehead==="court"?"compacte":"équilibrée"}.`],
-    brows:["Sourcils",`Épaisseur ${a.browSize}. Forme ${a.browShape}. Avec cette lumière : ${a.browHex}.`],
-    eyes:["Yeux",`Forme ${a.eyeShape}. Inclinaison ${a.eyeTilt}. Avec cette lumière : ${a.irisHex}.`],
-    lips:["Lèvres",`Forme ${a.lipShape}. Largeur ${a.lipWidth}. Volume ${a.lipVolume}. Teinte ${a.lipHex}.`],
+    face:["Visage",`Forme ${a.faceShape}.`],
+    forehead:["Front",`Front ${a.forehead}.`],
+    brows:["Sourcils",`Épaisseur : ${a.browSize}. Forme : ${a.browShape}. Couleur mesurée avec le flash : ${a.browName} (${a.browHex}).`],
+    eyes:["Yeux",`Forme : ${a.eyeShape}. Inclinaison : ${a.eyeTilt}. Couleur mesurée avec le flash : ${a.irisName} (${a.irisHex}).`],
+    lips:["Lèvres",`Forme : ${a.lipShape}. Largeur : ${a.lipWidth}. Volume : ${a.lipVolume}. Couleur mesurée avec le flash : ${a.lipName} (${a.lipHex}).`],
     jaw:["Mâchoire",`Mâchoire ${a.jaw}. Menton ${a.chinShape}.`],
-    skin:["Peau",`Carnation ${a.complexion}. Sous-ton ${a.undertone}. Contraste ${a.contrastLabel}. Couleur caméra ${a.skinHex}.`]
+    skin:["Peau",`Teinte : ${a.skinName} (${a.skinHex}). Sous-ton : ${a.undertone}. Contraste : ${a.contrastLabel}.`]
   }[activeZone];
   $("#mirrorResultTitle").textContent=data[0];
   $("#mirrorResult").textContent=data[1];
@@ -366,12 +478,36 @@ function clearCanvas(canvas){
   const c=canvas.getContext("2d");c.clearRect(0,0,canvas.width,canvas.height);
 }
 function mapPoint(p,w,h){return {x:(1-p.x)*w,y:p.y*h}}
-function drawLandmarks(canvas,video,lm){
+
+function drawFaceGuide(canvas,video,lm){
   const {ctx,w,h}=fitCanvas(canvas,video);
   ctx.clearRect(0,0,w,h);
-  ctx.fillStyle="rgba(255,255,255,.72)";
-  const indices=[10,21,54,58,93,132,152,361,323,288,284,251,70,63,105,66,107,336,296,334,293,300,33,133,159,145,362,263,386,374,61,13,14,291,172,397];
-  indices.forEach(i=>{const p=mapPoint(lm[i],w,h);ctx.beginPath();ctx.arc(p.x,p.y,1.35,0,Math.PI*2);ctx.fill()});
+  if(!lm) return;
+
+  ctx.strokeStyle="rgba(255,255,255,.72)";
+  ctx.fillStyle="rgba(255,255,255,.88)";
+  ctx.lineWidth=1.1;
+
+  // True face-oval landmarks instead of an artificial ellipse.
+  ctx.beginPath();
+  FACE_OVAL.forEach((i,k)=>{
+    const p=mapPoint(lm[i],w,h);
+    if(k===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y);
+  });
+  ctx.closePath();
+  ctx.stroke();
+
+  FACE_OVAL.forEach(i=>{
+    const p=mapPoint(lm[i],w,h);
+    ctx.beginPath();ctx.arc(p.x,p.y,1.45,0,Math.PI*2);ctx.fill();
+  });
+
+  // A few subtle anchors on features.
+  const featurePts=[70,105,107,336,334,300,33,133,159,145,362,263,386,374,61,13,14,291,152];
+  featurePts.forEach(i=>{
+    const p=mapPoint(lm[i],w,h);
+    ctx.beginPath();ctx.arc(p.x,p.y,1.15,0,Math.PI*2);ctx.fill();
+  });
 }
 
 function rgba(hex,a){
