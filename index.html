@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="Beauty Mirror">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=17">
+  <link rel="stylesheet" href="./styles.css?v=18">
   <title>Beauty Mirror</title>
 </head>
 <body>
@@ -54,7 +54,7 @@
 
       <header id="appHeader" class="topbar glass hidden">
         <div>
-          <div class="title-row"><div id="screenTitle" class="screen-title">Miroir</div><span class="version-badge">V17</span></div>
+          <div class="title-row"><div id="screenTitle" class="screen-title">Miroir</div><span class="version-badge">V18</span></div>
           <div id="cameraStatus" class="status-text">Analyse requise</div>
         </div>
         <button id="cameraButton" class="mini-button" type="button">Refaire l’analyse</button>
@@ -114,12 +114,12 @@
           <h3>Sourcils</h3>
           <p id="aBrows">Analyse requise.</p>
           <div id="aBrowAdvice" class="advice-box">La forme recommandée apparaîtra après l’analyse.</div>
-          <div class="local-carousel" aria-label="Formes de sourcils">
-            <button class="analysis-chip active" type="button">Recommandé ✨</button>
-            <button class="analysis-chip" type="button">Droit doux</button>
-            <button class="analysis-chip" type="button">Soft Arch</button>
-            <button class="analysis-chip" type="button">Arc naturel</button>
-            <button class="analysis-chip" type="button">Lift léger</button>
+          <div class="local-carousel brow-options" aria-label="Formes de sourcils">
+            <button class="analysis-chip active" data-brow="recommended" type="button">Recommandé ✨</button>
+            <button class="analysis-chip" data-brow="straight" type="button">Droit doux</button>
+            <button class="analysis-chip" data-brow="soft" type="button">Soft Arch</button>
+            <button class="analysis-chip" data-brow="natural" type="button">Arc naturel</button>
+            <button class="analysis-chip" data-brow="lift" type="button">Lift léger</button>
           </div>
         </article>
 
@@ -146,14 +146,14 @@
           <h3>Styles de makeup faits pour toi</h3>
           <p>Parmi une grande bibliothèque de styles, l’app sélectionne ceux qui correspondent le mieux à ton visage.</p>
           <div class="local-carousel makeup-carousel" id="makeupStyles">
-            <article class="makeup-style-card"><strong>Soft Glam</strong><span>Dégradés doux, peau lumineuse et structure équilibrée.</span><em>Très compatible</em></article>
-            <article class="makeup-style-card"><strong>Latte Makeup</strong><span>Tons chauds diffus et rendu monochrome élégant.</span><em>À confirmer</em></article>
-            <article class="makeup-style-card"><strong>Clean Girl</strong><span>Teint léger, sourcils propres et couleurs naturelles.</span><em>À confirmer</em></article>
-            <article class="makeup-style-card"><strong>Siren Eyes</strong><span>Regard étiré et accentuation de l’axe des yeux.</span><em>À confirmer</em></article>
-            <article class="makeup-style-card"><strong>Douyin Soft</strong><span>Lumière centrale, blush délicat et regard détaillé.</span><em>À confirmer</em></article>
-            <article class="makeup-style-card"><strong>Bronzy</strong><span>Chaleur du teint et relief doux avec bronzer.</span><em>À confirmer</em></article>
-            <article class="makeup-style-card"><strong>Cold Girl</strong><span>Blush frais et contraste rosé plus marqué.</span><em>À confirmer</em></article>
-            <article class="makeup-style-card"><strong>No-Makeup Makeup</strong><span>Correction minimale et mise en valeur très naturelle.</span><em>Très compatible</em></article>
+            <button class="makeup-style-card" type="button" data-look="soft"><strong>Soft Glam</strong><span>Dégradés doux, peau lumineuse et structure équilibrée.</span><em>Très compatible</em></button>
+            <button class="makeup-style-card" type="button" data-look="latte"><strong>Latte Makeup</strong><span>Tons chauds diffus et rendu monochrome élégant.</span><em>À confirmer</em></button>
+            <button class="makeup-style-card" type="button" data-look="clean"><strong>Clean Girl</strong><span>Teint léger, sourcils propres et couleurs naturelles.</span><em>À confirmer</em></button>
+            <button class="makeup-style-card" type="button" data-look="siren"><strong>Siren Eyes</strong><span>Regard étiré et accentuation de l’axe des yeux.</span><em>À confirmer</em></button>
+            <button class="makeup-style-card" type="button" data-look="douyin"><strong>Douyin Soft</strong><span>Lumière centrale, blush délicat et regard détaillé.</span><em>À confirmer</em></button>
+            <button class="makeup-style-card" type="button" data-look="bronzy"><strong>Bronzy</strong><span>Chaleur du teint et relief doux avec bronzer.</span><em>À confirmer</em></button>
+            <button class="makeup-style-card" type="button" data-look="cold"><strong>Cold Girl</strong><span>Blush frais et contraste rosé plus marqué.</span><em>À confirmer</em></button>
+            <button class="makeup-style-card" type="button" data-look="nomakeup"><strong>No-Makeup Makeup</strong><span>Correction minimale et mise en valeur très naturelle.</span><em>Très compatible</em></button>
           </div>
         </article>
 
@@ -165,6 +165,18 @@
           <p id="aJaw" class="analysis-second-line">Analyse requise.</p>
           <div id="structureAdvice" class="advice-box">Ces informations servent surtout à ajuster le placement du blush, du bronzer et l’équilibre général.</div>
         </article>
+
+        <div id="analysisPreview" class="analysis-preview hidden" role="dialog" aria-modal="true" aria-labelledby="analysisPreviewTitle">
+          <div class="analysis-preview-sheet glass">
+            <div class="analysis-preview-head">
+              <h3 id="analysisPreviewTitle">Aperçu</h3>
+              <button id="analysisPreviewClose" class="preview-close" type="button" aria-label="Fermer">×</button>
+            </div>
+            <div id="analysisPreviewVisual"></div>
+            <p id="analysisPreviewText"></p>
+            <span id="analysisPreviewTag" class="preview-tag">Aperçu représentatif</span>
+          </div>
+        </div>
       </section>
 
       <section id="tab-try" class="tab-view">
@@ -255,6 +267,6 @@
     </section>
   </main>
 
-  <script type="module" src="./app.js?v=17"></script>
+  <script type="module" src="./app.js?v=18"></script>
 </body>
 </html>

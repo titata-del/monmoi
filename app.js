@@ -969,10 +969,66 @@ function drawMood(canvas,video,lm,mood){
   r.forEach(([e,c,i])=>{drawMakeup(temp,video,lm,e,c,i);base.ctx.drawImage(temp,0,0,base.w,base.h);temp.getContext("2d").clearRect(0,0,temp.width,temp.height)});
 }
 
+
+const analysisPreview=$("#analysisPreview");
+const analysisPreviewTitle=$("#analysisPreviewTitle");
+const analysisPreviewVisual=$("#analysisPreviewVisual");
+const analysisPreviewText=$("#analysisPreviewText");
+const analysisPreviewTag=$("#analysisPreviewTag");
+
+const browPreviewData={
+  recommended:{title:"Forme recommandée",kind:"soft",text:"La forme recommandée dépend de ton analyse. L’aperçu montre ici une ligne douce, équilibrée et naturelle."},
+  straight:{title:"Droit doux",kind:"straight",text:"Une ligne presque horizontale avec très peu d’arc. Elle peut donner un rendu doux et équilibrer un visage qui paraît plus long."},
+  soft:{title:"Soft Arch",kind:"soft",text:"Un arc léger et progressif, sans cassure marquée. Il structure le regard tout en restant naturel."},
+  natural:{title:"Arc naturel",kind:"natural",text:"Une courbe proche de la ligne naturelle du sourcil, avec une montée modérée et une queue douce."},
+  lift:{title:"Lift léger",kind:"lift",text:"Une queue légèrement remontée pour ouvrir visuellement le regard sans créer un arc trop prononcé."}
+};
+const lookPreviewData={
+  soft:{title:"Soft Glam",text:"Teint lumineux, dégradés doux sur les yeux, blush fondu et lèvres équilibrées."},
+  latte:{title:"Latte Makeup",text:"Bruns, caramel et beige chaud utilisés de manière presque monochrome sur les yeux, les joues et les lèvres."},
+  clean:{title:"Clean Girl",text:"Peau fraîche, sourcils propres, blush discret, lèvres glossy et yeux très légers."},
+  siren:{title:"Siren Eyes",text:"Le regard est étiré horizontalement avec les ombres et le liner dirigés vers l’extérieur."},
+  douyin:{title:"Douyin Soft",text:"Teint lumineux, blush délicat, yeux détaillés et points de lumière pour un résultat doux et travaillé."},
+  bronzy:{title:"Bronzy",text:"Bronzer plus présent, tons terreux ou dorés et effet soleil pour donner chaleur et relief."},
+  cold:{title:"Cold Girl",text:"Blush rose frais sur les joues et légèrement sur le nez, avec des tons froids et rosés."},
+  nomakeup:{title:"No-Makeup Makeup",text:"Correction minimale, texture de peau conservée et couleurs très proches des teintes naturelles."}
+};
+
+function openBrowPreview(key){
+  const d=browPreviewData[key]; if(!d)return;
+  analysisPreviewTitle.textContent=d.title;
+  analysisPreviewVisual.innerHTML=`<div class="brow-preview"><div class="brow-preview-face"><span class="brow-shape left ${d.kind}"></span><span class="brow-shape right ${d.kind}"></span></div></div>`;
+  analysisPreviewText.textContent=d.text;
+  analysisPreviewTag.textContent="Aperçu de la forme";
+  analysisPreview.classList.remove("hidden");
+}
+function openLookPreview(key){
+  const d=lookPreviewData[key]; if(!d)return;
+  analysisPreviewTitle.textContent=d.title;
+  analysisPreviewVisual.innerHTML=`<div class="look-preview"><div class="look-preview-face"><span class="look-brow l"></span><span class="look-brow r"></span><span class="look-eye l"></span><span class="look-eye r"></span><span class="look-mouth"></span></div><div class="look-layer ${key}"></div></div>`;
+  analysisPreviewText.textContent=d.text;
+  analysisPreviewTag.textContent="Aperçu représentatif du style";
+  analysisPreview.classList.remove("hidden");
+}
+$$(".brow-options .analysis-chip").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    $$(".brow-options .analysis-chip").forEach(x=>x.classList.remove("active"));
+    btn.classList.add("active");
+    openBrowPreview(btn.dataset.brow);
+  });
+});
+$$("#makeupStyles .makeup-style-card").forEach(card=>{
+  card.addEventListener("click",()=>openLookPreview(card.dataset.look));
+});
+$("#analysisPreviewClose").addEventListener("click",()=>analysisPreview.classList.add("hidden"));
+analysisPreview.addEventListener("click",e=>{
+  if(e.target===analysisPreview)analysisPreview.classList.add("hidden");
+});
+
 if("serviceWorker" in navigator){
   window.addEventListener("load",async()=>{
   try{
-    const reg=await navigator.serviceWorker.register("./sw.js?v=17",{updateViaCache:"none"});
+    const reg=await navigator.serviceWorker.register("./sw.js?v=18",{updateViaCache:"none"});
     await reg.update();
   }catch(err){
     console.error(err);

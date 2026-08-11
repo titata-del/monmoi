@@ -1,4 +1,4 @@
-const CACHE="beauty-mirror-live-v17-analysis";
+const CACHE="beauty-mirror-live-v18-previews";
 const STATIC=["./manifest.webmanifest","./icon-192.png","./icon-512.png"];
 
 self.addEventListener("install",event=>{
