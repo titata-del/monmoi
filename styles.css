@@ -106,3 +106,53 @@ button{touch-action:manipulation}
   font-weight:700;
 }
 .flash-button:active{transform:scale(.98)}
+
+
+.global-screen-flash{
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  background:#fff;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .06s linear;
+}
+.global-screen-flash.on{opacity:1}
+
+.analysis-intro{
+  min-height:calc(100dvh - 30px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:18px 6px;
+}
+.intro-card{
+  width:100%;
+  border-radius:30px;
+  padding:28px 22px;
+  text-align:center;
+}
+.intro-icon{font-size:40px;margin-bottom:10px}
+.intro-card h2{font-size:29px;margin:0 0 8px}
+.intro-card p{font-size:14px;line-height:1.5;color:var(--muted);margin:0 0 22px}
+.primary-button{
+  width:100%;
+  border:0;
+  border-radius:999px;
+  background:#242329;
+  color:#fff;
+  min-height:50px;
+  padding:0 18px;
+  font-weight:750;
+}
+
+.analysis-progress{
+  min-height:calc(100dvh - 30px);
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+.analysis-progress .camera-card{margin-bottom:14px}
+.analysis-progress-copy{text-align:center;padding:12px 14px}
+.analysis-progress-copy h2{font-size:24px;margin:0 0 6px}
+.analysis-progress-copy p{font-size:13px;color:var(--muted);margin:0}

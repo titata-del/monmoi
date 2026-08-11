@@ -24,15 +24,38 @@
     </section>
 
     <section id="mainApp" class="main-app hidden">
-      <header class="topbar glass">
+      <div id="globalScreenFlash" class="global-screen-flash" aria-hidden="true"></div>
+      <section id="analysisIntro" class="analysis-intro">
+        <div class="intro-card glass">
+          <div class="intro-icon">✦</div>
+          <h2>Analyse du visage</h2>
+          <p>Regarde droit devant toi. L’app détecte ton visage, déclenche un flash écran et enregistre tes caractéristiques.</p>
+          <button id="beginAnalysisButton" class="primary-button" type="button">Commencer l’analyse</button>
+        </div>
+      </section>
+      <section id="analysisProgress" class="analysis-progress hidden">
+        <div class="camera-card glass">
+          <div class="camera-stage">
+            <video id="analysisVideo" autoplay playsinline muted></video>
+            <canvas id="analysisCanvas"></canvas>
+            <div id="analysisGuide" class="guide-message">Place ton visage face caméra</div>
+          </div>
+        </div>
+        <div class="analysis-progress-copy">
+          <h2 id="analysisProgressTitle">Préparation…</h2>
+          <p id="analysisProgressText">L’analyse démarre dès que ton visage est correctement détecté.</p>
+        </div>
+      </section>
+
+      <header id="appHeader" class="topbar glass hidden">
         <div>
           <div id="screenTitle" class="screen-title">Miroir</div>
-          <div id="cameraStatus" class="status-text">Caméra inactive</div>
+          <div id="cameraStatus" class="status-text">Analyse requise</div>
         </div>
-        <button id="cameraButton" class="mini-button" type="button">Activer</button>
+        <button id="cameraButton" class="mini-button" type="button">Refaire l’analyse</button>
       </header>
 
-      <section id="tab-mirror" class="tab-view active">
+      <section id="tab-mirror" class="tab-view">
         <div class="camera-card glass">
           <div class="camera-stage">
             <video id="mirrorVideo" autoplay playsinline muted></video>
@@ -66,7 +89,7 @@
       <section id="tab-analysis" class="tab-view">
         <div class="hero-copy">
           <h2>Ton analyse ✨</h2>
-          <p>Les résultats sont calculés à partir de la capture éclairée de ton visage.</p>
+          <p>Résultats enregistrés pendant l’analyse initiale.</p>
         </div>
 
         <div class="analysis-grid">
@@ -194,7 +217,7 @@
         </article>
       </section>
 
-      <nav class="bottom-nav glass" aria-label="Navigation principale">
+      <nav id="bottomNav" class="bottom-nav glass hidden" aria-label="Navigation principale">
         <button class="nav-button active" data-tab="mirror" type="button"><span>🪞</span>Miroir</button>
         <button class="nav-button" data-tab="analysis" type="button"><span>◇</span>Analyse</button>
         <button class="nav-button" data-tab="try" type="button"><span>💄</span>Essayer</button>
