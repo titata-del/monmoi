@@ -1,7 +1,7 @@
-# Beauty Mirror V26 — Aperçus intégrés
+# Beauty Mirror V28 — 3D différenciée
 
-- 20 aperçus sourcils intégrés directement dans l'application.
-- 8 aperçus makeup intégrés directement dans l'application.
-- Les aperçus ne dépendent plus des chemins d'images GitHub.
-- Badge V26 visible.
+- Chaque combinaison de sourcil affiche un avatar 3D différent.
+- Chaque style makeup affiche un avatar 3D distinct.
+- Les aperçus restent grands, avec les contrôles juste dessous.
 - Le Miroir n'a pas été modifié.
+- Badge V28 visible.

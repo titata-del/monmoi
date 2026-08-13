@@ -620,3 +620,8 @@ body.preview-open{overflow:hidden}
   text-align:center;
   padding:20px;
 }
+
+/* V28 - grand aperçu 3D puis commandes dessous */
+.preview-raster{width:100%;height:auto;max-height:58vh;object-fit:cover;object-position:center top;border-radius:24px;margin-bottom:10px}
+.preview-controls{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;padding:0 0 10px;scrollbar-width:none}
+.preview-controls::-webkit-scrollbar{display:none}
