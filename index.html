@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="Beauty Mirror">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=24">
+  <link rel="stylesheet" href="./styles.css?v=25">
   <title>Beauty Mirror</title>
 </head>
 <body>
@@ -68,7 +68,7 @@
 
       <header id="appHeader" class="topbar glass hidden">
         <div>
-          <div class="title-row"><div id="screenTitle" class="screen-title">Miroir</div><span class="version-badge">V24</span></div>
+          <div class="title-row"><div id="screenTitle" class="screen-title">Miroir</div><span class="version-badge">V25</span></div>
           <div id="cameraStatus" class="status-text">Analyse requise</div>
         </div>
         <button id="cameraButton" class="mini-button" type="button">Refaire l’analyse</button>
@@ -157,10 +157,33 @@
         <article class="analysis-card color-card glass">
           <span class="card-icon">✦</span>
           <div class="analysis-kicker">Teint</div>
-          <h3>Colorimétrie</h3>
+          <h3>Colorimétrie approfondie</h3>
           <p id="aColor">Analyse requise.</p>
-          <div id="palette" class="palette"></div>
+          <div class="color-diagnostics">
+            <div><span>Température</span><strong id="colorTemperature">—</strong></div>
+            <div><span>Profondeur</span><strong id="colorDepth">—</strong></div>
+            <div><span>Intensité</span><strong id="colorChroma">—</strong></div>
+            <div><span>Contraste</span><strong id="colorContrast">—</strong></div>
+          </div>
+          <div id="colorFamily" class="advice-box">Ta famille colorimétrique apparaîtra après l’analyse.</div>
           <div id="colorAdvice" class="advice-box">Blush, bronzer, lèvres et yeux seront proposés dans des familles cohérentes avec ta colorimétrie.</div>
+          <div class="palette-section">
+            <h4>Palette quotidienne</h4>
+            <div id="paletteDaily" class="palette palette-wide"></div>
+          </div>
+          <div class="palette-section">
+            <h4>Couleurs signature</h4>
+            <div id="paletteSignature" class="palette palette-wide"></div>
+          </div>
+          <div class="palette-section">
+            <h4>Soirée / contraste</h4>
+            <div id="paletteEvening" class="palette palette-wide"></div>
+          </div>
+          <div class="palette-section">
+            <h4>Blush · Bronzer · Lèvres · Yeux</h4>
+            <div id="paletteCategories" class="category-palettes"></div>
+          </div>
+          <div id="palette" class="palette hidden"></div>
         </article>
 
         <article class="analysis-card glass">
@@ -347,6 +370,6 @@
     })();
   </script>
 
-  <script type="module" src="./app.js?v=24"></script>
+  <script type="module" src="./app.js?v=25"></script>
 </body>
 </html>

@@ -1,9 +1,8 @@
-# Beauty Mirror V24 — correctif caméra + vérifications
+# Beauty Mirror V25 — Analyse renforcée
 
-- Correction racine : restauration des variables d’état supprimées par erreur dans les versions précédentes.
-- La demande caméra Safari peut de nouveau s’exécuter avant l’analyse.
-- Correction de plusieurs champs de recommandations Analyse (inclinaison, lèvres, menton, contraste).
-- Cache PWA V24 forcé.
-- Miroir et aperçus conservés.
-
-Badge V24 visible après déverrouillage.
+- Miroir V24 inchangé.
+- Chaque forme + épaisseur de sourcil possède sa propre image raster.
+- Chaque style makeup possède sa propre image de référence.
+- Colorimétrie approfondie : température, profondeur, intensité chromatique, contraste et famille.
+- Trois palettes personnalisées + palettes blush/bronzer/lèvres/yeux.
+- Badge V25 visible.
