@@ -1,7 +1,10 @@
-# Beauty Mirror V19 — Aperçus réalistes
+# Beauty Mirror V20
 
-- Miroir inchangé.
-- Visage généré réaliste pour les aperçus.
-- Épaisseur sourcils : fin, moyen, épais, très épais.
-- Aperçus makeup plus lisibles.
-- Badge V19 visible.
+Correctif V19 :
+- bug JavaScript des aperçus supprimé ;
+- aperçus sourcils réalistes conservés ;
+- épaisseur fin / moyen / épais / très épais fonctionnelle ;
+- clic sur les styles makeup réparé ;
+- le Miroir n’a pas été modifié.
+
+Badge V20 visible.
