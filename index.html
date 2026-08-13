@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="Beauty Mirror">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=22">
+  <link rel="stylesheet" href="./styles.css?v=23">
   <title>Beauty Mirror</title>
 </head>
 <body>
@@ -48,7 +48,8 @@
             <div><span>✓</span> Évite une lumière très jaune ou colorée</div>
             <div><span>✓</span> Regarde droit devant toi, yeux bien ouverts et assez près pour voir nettement l’iris</div>
           </div>
-          <button id="beginAnalysisButton" class="primary-button" type="button">Je suis bien éclairé(e)</button>
+          <div id="cameraPermissionStatus" class="camera-permission-status" aria-live="polite"></div>
+          <button id="beginAnalysisButton" class="primary-button" type="button">Activer la caméra et commencer</button>
         </div>
       </section>
       <section id="analysisProgress" class="analysis-progress hidden">
@@ -67,7 +68,7 @@
 
       <header id="appHeader" class="topbar glass hidden">
         <div>
-          <div class="title-row"><div id="screenTitle" class="screen-title">Miroir</div><span class="version-badge">V22</span></div>
+          <div class="title-row"><div id="screenTitle" class="screen-title">Miroir</div><span class="version-badge">V23</span></div>
           <div id="cameraStatus" class="status-text">Analyse requise</div>
         </div>
         <button id="cameraButton" class="mini-button" type="button">Refaire l’analyse</button>
@@ -346,6 +347,6 @@
     })();
   </script>
 
-  <script type="module" src="./app.js?v=22"></script>
+  <script type="module" src="./app.js?v=23"></script>
 </body>
 </html>

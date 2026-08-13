@@ -549,3 +549,20 @@ body.preview-open{overflow:hidden}
     border-radius:28px 28px 20px 20px;
   }
 }
+
+
+.camera-permission-status{
+  min-height:18px;
+  margin:0 0 10px;
+  color:#7a5c68;
+  font-size:12px;
+  line-height:1.4;
+}
+.camera-permission-status.error{
+  color:#a13f55;
+  font-weight:650;
+}
+.camera-permission-status.ok{
+  color:#4d735b;
+  font-weight:650;
+}

@@ -77,7 +77,8 @@ async function restartAnalysis(){
 
   try{
     await stopCameraAndModel();
-    await startCamera();
+    await prepareAnalysisCamera();
+    await initLandmarker();
     $("#analysisProgressTitle").textContent="Détection du visage";
     $("#analysisProgressText").textContent="Regarde droit devant toi et reste immobile quelques secondes.";
     $("#analysisGuide").textContent="Place ton visage face caméra";
@@ -121,40 +122,109 @@ async function initLandmarker(){
   }
 }
 
-async function startCamera(){
-  if(!stream){
-    stream=await navigator.mediaDevices.getUserMedia({
-      video:{
-        facingMode:{ideal:"user"},
-        width:{ideal:480,max:720},
-        height:{ideal:640,max:960},
-        frameRate:{ideal:24,max:30}
-      },
-      audio:false
-    });
+async function requestFrontCamera(){
+  if(!window.isSecureContext){
+    throw new Error("HTTPS_REQUIRED");
   }
-  const analysisVideo=$("#analysisVideo");
-  analysisVideo.srcObject=stream;
-  await analysisVideo.play();
-  await initLandmarker();
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    throw new Error("CAMERA_UNSUPPORTED");
+  }
+
+  // IMPORTANT iPhone/Safari: this call is made directly from the tap handler,
+  // before MediaPipe loading or any screen transition.
+  const newStream=await navigator.mediaDevices.getUserMedia({
+    video:{
+      facingMode:{ideal:"user"},
+      width:{ideal:480,max:720},
+      height:{ideal:640,max:960},
+      frameRate:{ideal:24,max:30}
+    },
+    audio:false
+  });
+
+  if(stream && stream!==newStream){
+    try{ stream.getTracks().forEach(t=>t.stop()); }catch(e){}
+  }
+  stream=newStream;
+  return stream;
 }
 
+async function prepareAnalysisCamera(){
+  const analysisVideo=$("#analysisVideo");
+  if(!stream || !stream.getVideoTracks().some(t=>t.readyState==="live")){
+    await requestFrontCamera();
+  }
+  analysisVideo.srcObject=stream;
+  analysisVideo.setAttribute("playsinline","");
+  analysisVideo.muted=true;
+  await analysisVideo.play();
+}
+
+async function startCamera(){
+  await prepareAnalysisCamera();
+  await initLandmarker();
+}
 $("#beginAnalysisButton").addEventListener("click",async()=>{
-  $("#analysisIntro").classList.add("hidden");
-  $("#analysisProgress").classList.remove("hidden");
-  $("#analysisProgressTitle").textContent="Ouverture de la caméra…";
+  const button=$("#beginAnalysisButton");
+  const status=$("#cameraPermissionStatus");
+
+  button.disabled=true;
+  button.textContent="Autorisation caméra…";
+  status.className="camera-permission-status";
+  status.textContent="Safari doit maintenant te demander l’accès à la caméra.";
+
   try{
-    await startCamera();
-    stableFrames=0; savedAnalysis=null; capturing=false; lastTime=-1;
+    // getUserMedia first: this preserves the direct user gesture on iPhone.
+    await prepareAnalysisCamera();
+
+    status.className="camera-permission-status ok";
+    status.textContent="Caméra autorisée ✓";
+
+    $("#analysisIntro").classList.add("hidden");
+    $("#analysisProgress").classList.remove("hidden");
+    $("#analysisProgressTitle").textContent="Chargement de l’analyse…";
+    $("#analysisProgressText").textContent="La caméra est active. Préparation de l’analyse du visage.";
+
+    await initLandmarker();
+
+    stableFrames=0;
+    savedAnalysis=null;
+    capturing=false;
+    lastTime=-1;
     liveRunning=false;
+
     $("#analysisProgressTitle").textContent="Détection du visage";
     $("#analysisProgressText").textContent="Regarde droit devant toi et reste immobile quelques secondes.";
+    $("#analysisGuide").textContent="Place ton visage face caméra";
+
     const loopId=++analysisLoopId;
     analyzeLoop(loopId);
   }catch(e){
-    console.error(e);
-    $("#analysisProgressTitle").textContent="Analyse impossible";
-    $("#analysisProgressText").textContent="Sur iPhone : ouvre le site dans Safari, autorise la caméra puis recharge la page. Si la caméra est déjà autorisée, ferme l’app et relance-la.";
+    console.error("Camera permission / analysis startup error",e);
+
+    button.disabled=false;
+    button.textContent="Réessayer la caméra";
+    status.className="camera-permission-status error";
+
+    if(e?.name==="NotAllowedError" || e?.name==="PermissionDeniedError"){
+      status.textContent="Accès caméra refusé. Sur iPhone : Réglages > Safari > Caméra, puis autorise ce site et réessaie.";
+    }else if(e?.name==="NotFoundError" || e?.name==="DevicesNotFoundError"){
+      status.textContent="Aucune caméra frontale n’a été trouvée.";
+    }else if(e?.message==="HTTPS_REQUIRED"){
+      status.textContent="La caméra nécessite l’adresse HTTPS de GitHub Pages.";
+    }else if(e?.message==="CAMERA_UNSUPPORTED"){
+      status.textContent="Ce navigateur ne donne pas accès à la caméra. Ouvre l’app dans Safari.";
+    }else{
+      status.textContent="La caméra n’a pas pu démarrer. Ferme l’app, rouvre-la dans Safari puis réessaie.";
+    }
+
+    // Stay on preparation screen instead of leaving the app in an impossible analysis state.
+    $("#analysisProgress").classList.add("hidden");
+    $("#analysisIntro").classList.remove("hidden");
+  }finally{
+    if(stream && stream.getVideoTracks().some(t=>t.readyState==="live")){
+      button.disabled=false;
+    }
   }
 });
 
@@ -1080,7 +1150,7 @@ analysisPreview.addEventListener("click",e=>{
 if("serviceWorker" in navigator){
   window.addEventListener("load",async()=>{
   try{
-    const reg=await navigator.serviceWorker.register("./sw.js?v=22",{updateViaCache:"none"});
+    const reg=await navigator.serviceWorker.register("./sw.js?v=23",{updateViaCache:"none"});
     await reg.update();
   }catch(err){
     console.error(err);

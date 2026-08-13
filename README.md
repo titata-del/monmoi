@@ -1,8 +1,8 @@
-# Beauty Mirror V22 — Aperçus visibles
+# Beauty Mirror V23 — Caméra corrigée
 
-- Images des aperçus intégrées directement dans l’application : plus de chemin d’image cassé sur GitHub/iPhone.
-- Aperçu sourcil et makeup ouvert en bottom-sheet fixe devant l’utilisateur.
-- Plus besoin de remonter la page après avoir touché une recommandation.
-- Le fond est bloqué pendant l’aperçu.
-- Le Miroir n’a pas été modifié.
-- Badge V22 visible.
+- Le bouton initial demande l’autorisation caméra AVANT de charger MediaPipe.
+- Sur iPhone/Safari, getUserMedia est appelé directement depuis le toucher utilisateur.
+- En cas de refus ou d’erreur, l’app reste sur l’écran de préparation avec un message clair et un bouton Réessayer.
+- L’analyse ne peut plus démarrer sans caméra active.
+- Les aperçus V22 et le Miroir restent inchangés.
+- Badge V23 visible.
