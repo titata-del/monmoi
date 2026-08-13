@@ -970,6 +970,7 @@ function drawMood(canvas,video,lm,mood){
 }
 
 
+let selectedBrowThickness="medium";
 const analysisPreview=$("#analysisPreview");
 const analysisPreviewTitle=$("#analysisPreviewTitle");
 const analysisPreviewVisual=$("#analysisPreviewVisual");
@@ -994,22 +995,15 @@ const lookPreviewData={
   nomakeup:{title:"No-Makeup Makeup",text:"Correction minimale, texture de peau conservée et couleurs très proches des teintes naturelles."}
 };
 
-function openBrowPreview(key){
-  const d=browPreviewData[key]; if(!d)return;
-  analysisPreviewTitle.textContent=d.title;
-  analysisPreviewVisual.innerHTML=`<div class="brow-preview"><div class="brow-preview-face"><span class="brow-shape left ${d.kind}"></span><span class="brow-shape right ${d.kind}"></span></div></div>`;
-  analysisPreviewText.textContent=d.text;
-  analysisPreviewTag.textContent="Aperçu de la forme";
-  analysisPreview.classList.remove("hidden");
-}
-function openLookPreview(key){
-  const d=lookPreviewData[key]; if(!d)return;
-  analysisPreviewTitle.textContent=d.title;
-  analysisPreviewVisual.innerHTML=`<div class="look-preview"><div class="look-preview-face"><span class="look-brow l"></span><span class="look-brow r"></span><span class="look-eye l"></span><span class="look-eye r"></span><span class="look-mouth"></span></div><div class="look-layer ${key}"></div></div>`;
+function openBrowPreview(key){const d=browPreviewData[key];if(!d)return;analysisPreviewTitle.textContent=d.title;const kind=d.kind||"soft";analysisPreviewVisual.innerHTML=`<div class="real-preview-frame brows"><img src="./assets/preview-brows.jpg" alt="Visage réaliste montrant la forme de sourcil"><div class="real-brow-overlay ${kind} ${selectedBrowThickness}"><span class="brow-stroke left"></span><span class="brow-stroke right"></span></div></div>`;const label=selectedBrowThickness==="thin"?"fine":selectedBrowThickness==="medium"?"moyenne":selectedBrowThickness==="thick"?"épaisse":"très épaisse";analysisPreviewText.textContent=d.text+" Épaisseur affichée : "+label+".";analysisPreviewTag.textContent="Aperçu forme + épaisseur";analysisPreview.classList.remove("hidden");}
+function openLookPreview(key){const d=lookPreviewData[key];if(!d)return;analysisPreviewTitle.textContent=d.title;analysisPreviewVisual.innerHTML=`<div class="real-preview-frame makeup"><img src="./assets/preview-face.jpg" alt="Visage réaliste avec aperçu du style de maquillage ${d.title}"><div class="real-makeup-overlay ${key}"><span class="eye-shadow left"></span><span class="eye-shadow right"></span><span class="blush left"></span><span class="blush right"></span><span class="bronze left"></span><span class="bronze right"></span><span class="lip-tint"></span></div></div>`;analysisPreviewText.textContent=d.text;analysisPreviewTag.textContent="Aperçu sur visage réaliste";analysisPreview.classList.remove("hidden");}"></div></div>`;
   analysisPreviewText.textContent=d.text;
   analysisPreviewTag.textContent="Aperçu représentatif du style";
   analysisPreview.classList.remove("hidden");
 }
+$$(".brow-thickness-options .thickness-chip").forEach(btn=>{
+  btn.addEventListener("click",()=>{selectedBrowThickness=btn.dataset.thickness;$$(".brow-thickness-options .thickness-chip").forEach(x=>x.classList.remove("active"));btn.classList.add("active");});
+});
 $$(".brow-options .analysis-chip").forEach(btn=>{
   btn.addEventListener("click",()=>{
     $$(".brow-options .analysis-chip").forEach(x=>x.classList.remove("active"));
@@ -1028,7 +1022,7 @@ analysisPreview.addEventListener("click",e=>{
 if("serviceWorker" in navigator){
   window.addEventListener("load",async()=>{
   try{
-    const reg=await navigator.serviceWorker.register("./sw.js?v=18",{updateViaCache:"none"});
+    const reg=await navigator.serviceWorker.register("./sw.js?v=19",{updateViaCache:"none"});
     await reg.update();
   }catch(err){
     console.error(err);

@@ -1,8 +1,7 @@
-# Beauty Mirror V18 — Aperçus Analyse
+# Beauty Mirror V19 — Aperçus réalistes
 
-- Clic sur une forme de sourcil : aperçu visuel + explication.
-- Clic sur un style makeup : aperçu représentatif + description.
-- Carrousels restent locaux, la page ne glisse pas horizontalement.
-- Le Miroir n’a pas été modifié.
-
-Badge V18 visible.
+- Miroir inchangé.
+- Visage généré réaliste pour les aperçus.
+- Épaisseur sourcils : fin, moyen, épais, très épais.
+- Aperçus makeup plus lisibles.
+- Badge V19 visible.

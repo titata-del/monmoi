@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="Beauty Mirror">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=18">
+  <link rel="stylesheet" href="./styles.css?v=19">
   <title>Beauty Mirror</title>
 </head>
 <body>
@@ -54,7 +54,7 @@
 
       <header id="appHeader" class="topbar glass hidden">
         <div>
-          <div class="title-row"><div id="screenTitle" class="screen-title">Miroir</div><span class="version-badge">V18</span></div>
+          <div class="title-row"><div id="screenTitle" class="screen-title">Miroir</div><span class="version-badge">V19</span></div>
           <div id="cameraStatus" class="status-text">Analyse requise</div>
         </div>
         <button id="cameraButton" class="mini-button" type="button">Refaire l’analyse</button>
@@ -120,6 +120,15 @@
             <button class="analysis-chip" data-brow="soft" type="button">Soft Arch</button>
             <button class="analysis-chip" data-brow="natural" type="button">Arc naturel</button>
             <button class="analysis-chip" data-brow="lift" type="button">Lift léger</button>
+          </div>
+          <div class="brow-thickness-block">
+            <div class="brow-thickness-title">Épaisseur du sourcil</div>
+            <div class="local-carousel brow-thickness-options" aria-label="Épaisseur des sourcils">
+              <button class="thickness-chip" data-thickness="thin" type="button"><span class="thickness-line thin"></span>Fin</button>
+              <button class="thickness-chip active" data-thickness="medium" type="button"><span class="thickness-line medium"></span>Moyen</button>
+              <button class="thickness-chip" data-thickness="thick" type="button"><span class="thickness-line thick"></span>Épais</button>
+              <button class="thickness-chip" data-thickness="very-thick" type="button"><span class="thickness-line very-thick"></span>Très épais</button>
+            </div>
           </div>
         </article>
 
@@ -267,6 +276,6 @@
     </section>
   </main>
 
-  <script type="module" src="./app.js?v=18"></script>
+  <script type="module" src="./app.js?v=19"></script>
 </body>
 </html>
