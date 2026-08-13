@@ -10,6 +10,28 @@ const WASM_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-r
 // Le verrouillage est volontairement géré dans index.html afin qu'il fonctionne
 // même si MediaPipe ou son CDN met du temps à charger sur iPhone.
 
+let stream = null;
+let landmarker = null;
+let raf = null;
+let lastTime = -1;
+let latestLandmarks = null;
+let savedAnalysis = null;
+let stableFrames = 0;
+let capturing = false;
+let analysisLoopId = 0;
+let liveRunning = false;
+
+let activeZone = "face";
+let activeEffect = "brows";
+let effectIntensity = .55;
+let activeColor = "#8a5a52";
+let activeMood = null;
+
+const sampleCanvas = document.createElement("canvas");
+const sampleCtx = sampleCanvas.getContext("2d",{willReadFrequently:true});
+
+const FACE_OVAL=[10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,152,148,176,149,150,136,172,58,132,93,234,127,162,21,54,103,67,109];
+
 const videos=()=>[$("#analysisVideo"),$("#mirrorVideo"),$("#tryVideo"),$("#adviceVideo")].filter(Boolean);
 
 function clearSavedResults(){
@@ -174,7 +196,7 @@ $("#beginAnalysisButton").addEventListener("click",async()=>{
   status.textContent="Safari doit maintenant te demander l’accès à la caméra.";
 
   try{
-    // getUserMedia first: this preserves the direct user gesture on iPhone.
+    // getUserMedia is the very first awaited action from the user tap on iPhone/Safari.
     await prepareAnalysisCamera();
 
     status.className="camera-permission-status ok";
@@ -867,16 +889,16 @@ function faceAdvice(a){
   return "Ta morphologie est équilibrée : tu peux garder des placements naturels et jouer davantage sur le style recherché que sur une correction forte.";
 }
 function eyeAdvice(a){
-  const tilt=a.eyeTilt||"";
+  const tilt=a.eyeTiltLabel||"";
   if(tilt.includes("relev")) return "Ton regard accepte très bien les styles étirés : liner fin, siren eyes doux, fards tirés vers l’extérieur et coin externe légèrement intensifié.";
   if(tilt.includes("descend")) return "Un placement remontant fonctionne bien : liner qui se relève avant le coin externe, fard plus haut sur l’extérieur et lumière au centre de la paupière.";
   if(a.eyeShape==="rond") return "Pour allonger le regard : liner fin du milieu vers l’extérieur, fard étiré et intensité concentrée sur le coin externe.";
   return "Ton regard est polyvalent : soft glam, halo eye léger, liner fin ou smoky diffus peuvent fonctionner selon l’intensité souhaitée.";
 }
 function lipAdvice(a){
-  if(a.lipVolume==="plein") return "Les textures satinées ou glossy mettent naturellement le volume en valeur. Un contour très léger suffit pour garder un résultat naturel.";
-  if(a.lipVolume==="fin") return "Un crayon très proche de la teinte naturelle, légèrement fondu vers l’intérieur, puis une texture satinée peut donner plus de relief sans effet artificiel.";
-  if(a.lipWidth==="large") return "Les teintes monochromes et les dégradés doux fonctionnent bien. Le contour peut rester discret pour conserver l’équilibre naturel.";
+  if(a.lipVolume==="pleines") return "Les textures satinées ou glossy mettent naturellement le volume en valeur. Un contour très léger suffit pour garder un résultat naturel.";
+  if(a.lipVolume==="fines") return "Un crayon très proche de la teinte naturelle, légèrement fondu vers l’intérieur, puis une texture satinée peut donner plus de relief sans effet artificiel.";
+  if(a.lipWidth==="larges") return "Les teintes monochromes et les dégradés doux fonctionnent bien. Le contour peut rester discret pour conserver l’équilibre naturel.";
   return "Un contour doux et une texture satinée ou brillante peuvent souligner la forme sans la modifier fortement.";
 }
 function colorAdvice(a){
@@ -886,7 +908,7 @@ function colorAdvice(a){
   return "Les tons neutres sont une bonne base : rose naturel, brun doux, beige rosé et bronze neutre. Tu peux ensuite aller plus chaud ou plus froid selon le look.";
 }
 function structureAdvice(a){
-  return `Front ${a.forehead}, mâchoire ${a.jaw}, menton ${a.chinShape}. Ces éléments servent surtout à déterminer où placer le blush et le bronzer, sans chercher à masquer ta morphologie.`;
+  return `Front ${a.forehead}, mâchoire ${a.jaw}, menton ${a.chin}. Ces éléments servent surtout à déterminer où placer le blush et le bronzer, sans chercher à masquer ta morphologie.`;
 }
 function updateMakeupStyleRanking(a){
   const cards=[...document.querySelectorAll("#makeupStyles .makeup-style-card")];
@@ -897,8 +919,8 @@ function updateMakeupStyleRanking(a){
   score["Bronzy"]=a.undertone==="chaud"||a.undertone==="olive"?9:6;
   score["Latte Makeup"]=a.undertone==="chaud"||a.undertone==="olive"?9:5;
   score["Cold Girl"]=a.undertone==="froid"?9:5;
-  score["Siren Eyes"]=a.eyeTilt?.includes("relev")||a.eyeShape?.includes("amande")?9:6;
-  score["Douyin Soft"]=a.contrastLabel==="doux"||a.eyeShape==="rond"?8:6;
+  score["Siren Eyes"]=a.eyeTiltLabel?.includes("relev")||a.eyeShape?.includes("amande")?9:6;
+  score["Douyin Soft"]=a.contrast==="doux"||a.eyeShape==="rond"?8:6;
   cards.forEach(card=>{
     const name=card.querySelector("strong")?.textContent||"";
     const badge=card.querySelector("em");
@@ -1150,7 +1172,7 @@ analysisPreview.addEventListener("click",e=>{
 if("serviceWorker" in navigator){
   window.addEventListener("load",async()=>{
   try{
-    const reg=await navigator.serviceWorker.register("./sw.js?v=23",{updateViaCache:"none"});
+    const reg=await navigator.serviceWorker.register("./sw.js?v=24",{updateViaCache:"none"});
     await reg.update();
   }catch(err){
     console.error(err);
