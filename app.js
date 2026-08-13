@@ -1,4 +1,4 @@
-import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/+esm";
+let FaceLandmarker=null, FilesetResolver=null;
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
@@ -7,55 +7,8 @@ const PASSCODE = "071079";
 const MODEL_URL = "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
 const WASM_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/wasm";
 
-let pin = "";
-let stream = null;
-let landmarker = null;
-let raf = null;
-let lastTime = -1;
-let latestLandmarks = null;
-let savedAnalysis = null;
-let stableFrames = 0;
-let capturing = false;
-let analysisLoopId = 0;
-let liveRunning = false;
-
-let activeZone = "face";
-let activeEffect = "brows";
-let effectIntensity = .55;
-let activeColor = "#8a5a52";
-let activeMood = null;
-
-const sampleCanvas = document.createElement("canvas");
-const sampleCtx = sampleCanvas.getContext("2d",{willReadFrequently:true});
-
-const FACE_OVAL=[10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,152,148,176,149,150,136,172,58,132,93,234,127,162,21,54,103,67,109];
-
-function buildPin(){
-  const dots=$("#pinDots"); dots.innerHTML="";
-  for(let i=0;i<6;i++){const d=document.createElement("span");d.className="pin-dot"+(i<pin.length?" on":"");dots.appendChild(d)}
-  const pad=$("#keypad"); pad.innerHTML="";
-  ["1","2","3","4","5","6","7","8","9","","0","del"].forEach(v=>{
-    const b=document.createElement("button"); b.type="button"; b.className="key"+(v===""?" blank":""); b.disabled=v===""; b.textContent=v==="del"?"⌫":v;
-    if(v!=="") b.addEventListener("click",()=>tapPin(v)); pad.appendChild(b);
-  });
-}
-function tapPin(v){
-  if(v==="del"){pin=pin.slice(0,-1);$("#pinError").textContent="";buildPin();return}
-  if(pin.length>=6)return;
-  pin+=v; buildPin();
-  if(pin.length===6){
-    setTimeout(()=>{
-      if(pin===PASSCODE){
-        $("#lockScreen").classList.add("hidden");
-        $("#mainApp").classList.remove("hidden");
-      }else{
-        $("#pinError").textContent="Code incorrect";
-        pin=""; buildPin();
-      }
-    },100);
-  }
-}
-buildPin();
+// Le verrouillage est volontairement géré dans index.html afin qu'il fonctionne
+// même si MediaPipe ou son CDN met du temps à charger sur iPhone.
 
 const videos=()=>[$("#analysisVideo"),$("#mirrorVideo"),$("#tryVideo"),$("#adviceVideo")].filter(Boolean);
 
@@ -139,6 +92,11 @@ async function restartAnalysis(){
 
 async function initLandmarker(){
   if(landmarker)return;
+  if(!FaceLandmarker || !FilesetResolver){
+    const visionModule=await import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/+esm");
+    FaceLandmarker=visionModule.FaceLandmarker;
+    FilesetResolver=visionModule.FilesetResolver;
+  }
   const vision=await FilesetResolver.forVisionTasks(WASM_URL);
   const options={
     runningMode:"VIDEO",
@@ -1107,7 +1065,7 @@ analysisPreview.addEventListener("click",e=>{
 if("serviceWorker" in navigator){
   window.addEventListener("load",async()=>{
   try{
-    const reg=await navigator.serviceWorker.register("./sw.js?v=20",{updateViaCache:"none"});
+    const reg=await navigator.serviceWorker.register("./sw.js?v=21",{updateViaCache:"none"});
     await reg.update();
   }catch(err){
     console.error(err);

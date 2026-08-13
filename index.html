@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="Beauty Mirror">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=20">
+  <link rel="stylesheet" href="./styles.css?v=21">
   <title>Beauty Mirror</title>
 </head>
 <body>
@@ -19,7 +19,20 @@
       <h1>Beauty Mirror</h1>
       <p>Entre le code</p>
       <div id="pinDots" class="pin-dots" aria-label="Code à 6 chiffres"></div>
-      <div id="keypad" class="keypad"></div>
+      <div id="keypad" class="keypad">
+        <button type="button" class="key" data-pin="1">1</button>
+        <button type="button" class="key" data-pin="2">2</button>
+        <button type="button" class="key" data-pin="3">3</button>
+        <button type="button" class="key" data-pin="4">4</button>
+        <button type="button" class="key" data-pin="5">5</button>
+        <button type="button" class="key" data-pin="6">6</button>
+        <button type="button" class="key" data-pin="7">7</button>
+        <button type="button" class="key" data-pin="8">8</button>
+        <button type="button" class="key" data-pin="9">9</button>
+        <span class="key blank" aria-hidden="true"></span>
+        <button type="button" class="key" data-pin="0">0</button>
+        <button type="button" class="key" data-pin="del" aria-label="Effacer">⌫</button>
+      </div>
       <div id="pinError" class="pin-error" aria-live="polite"></div>
     </section>
 
@@ -54,7 +67,7 @@
 
       <header id="appHeader" class="topbar glass hidden">
         <div>
-          <div class="title-row"><div id="screenTitle" class="screen-title">Miroir</div><span class="version-badge">V20</span></div>
+          <div class="title-row"><div id="screenTitle" class="screen-title">Miroir</div><span class="version-badge">V21</span></div>
           <div id="cameraStatus" class="status-text">Analyse requise</div>
         </div>
         <button id="cameraButton" class="mini-button" type="button">Refaire l’analyse</button>
@@ -276,6 +289,63 @@
     </section>
   </main>
 
-  <script type="module" src="./app.js?v=20"></script>
+  
+  <script>
+    (function(){
+      const PASSCODE="071079";
+      const lock=document.getElementById("lockScreen");
+      const app=document.getElementById("mainApp");
+      const dots=document.getElementById("pinDots");
+      const error=document.getElementById("pinError");
+      const keypad=document.getElementById("keypad");
+      let pin="";
+
+      function renderDots(){
+        dots.innerHTML="";
+        for(let i=0;i<6;i++){
+          const d=document.createElement("span");
+          d.className="pin-dot"+(i<pin.length?" on":"");
+          dots.appendChild(d);
+        }
+      }
+
+      function input(value){
+        if(value==="del"){
+          pin=pin.slice(0,-1);
+          error.textContent="";
+          renderDots();
+          return;
+        }
+        if(pin.length>=6) return;
+        pin+=value;
+        renderDots();
+
+        if(pin.length===6){
+          setTimeout(function(){
+            if(pin===PASSCODE){
+              lock.classList.add("hidden");
+              app.classList.remove("hidden");
+              window.dispatchEvent(new CustomEvent("beauty-unlocked"));
+            }else{
+              error.textContent="Code incorrect";
+              pin="";
+              renderDots();
+            }
+          },100);
+        }
+      }
+
+      keypad.addEventListener("click",function(e){
+        const button=e.target.closest("[data-pin]");
+        if(!button) return;
+        input(button.dataset.pin);
+      });
+
+      renderDots();
+      window.__beautyLockReady=true;
+    })();
+  </script>
+
+  <script type="module" src="./app.js?v=21"></script>
 </body>
 </html>

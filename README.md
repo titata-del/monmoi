@@ -1,10 +1,7 @@
-# Beauty Mirror V20
+# Beauty Mirror V21 — Correctif code
 
-Correctif V19 :
-- bug JavaScript des aperçus supprimé ;
-- aperçus sourcils réalistes conservés ;
-- épaisseur fin / moyen / épais / très épais fonctionnelle ;
-- clic sur les styles makeup réparé ;
-- le Miroir n’a pas été modifié.
-
-Badge V20 visible.
+- Le pavé numérique est maintenant directement présent dans index.html.
+- Le code 071079 fonctionne même si MediaPipe n'a pas encore chargé.
+- MediaPipe est chargé seulement au moment de lancer l'analyse.
+- Le Miroir et l'onglet Analyse restent inchangés.
+- Badge V21 visible après déverrouillage.

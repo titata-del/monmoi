@@ -1,4 +1,4 @@
-const CACHE="beauty-mirror-live-v20-preview-fix";
+const CACHE="beauty-mirror-live-v21-lock-fix";
 const STATIC=["./manifest.webmanifest","./icon-192.png","./icon-512.png"];
 
 self.addEventListener("install",event=>{
