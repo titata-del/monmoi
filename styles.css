@@ -608,3 +608,15 @@ body.preview-open{overflow:hidden}
 }
 .preview-raster.brows{aspect-ratio:1.65/1}
 .preview-raster.makeup{aspect-ratio:4/5}
+
+.preview-image-fallback{
+  display:grid;
+  place-items:center;
+  min-height:220px;
+  border-radius:22px;
+  background:rgba(255,255,255,.56);
+  color:var(--muted);
+  font-size:13px;
+  text-align:center;
+  padding:20px;
+}
